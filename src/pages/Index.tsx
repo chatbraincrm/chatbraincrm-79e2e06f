@@ -248,6 +248,12 @@ const Index = () => {
     return <Navigate to="/super-admin" replace />;
   }
 
+  // Super Admin sempre opera pelo painel administrativo — nunca cai no app
+  // de vendedor (evita tela "Aguardando liberação" quando não há produtos).
+  if (isSuperAdmin()) {
+    return <Navigate to="/admin" replace />;
+  }
+
   // Admin de empresa: por padrão redireciona ao painel administrativo.
   // Exceções (NÃO redireciona, deixa o admin usar o app do vendedor):
   // 1) Onboarding guiado pendente — mostra o modal de boas-vindas aqui.
@@ -257,7 +263,6 @@ const Index = () => {
     (assignedProducts?.length || 0) > 0;
   if (
     isAdmin() &&
-    !isSuperAdmin() &&
     !showGuided &&
     !adminHasAssignedProducts
   ) {
