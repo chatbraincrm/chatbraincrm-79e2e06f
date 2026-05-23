@@ -135,7 +135,7 @@ export function PlatformSettings() {
           <h1 className="text-2xl font-bold text-foreground">Identidade Visual</h1>
           <p className="text-muted-foreground">Personalize toda a aparência da plataforma</p>
         </div>
-        <Button onClick={handleSave} disabled={updateSettings.isPending} size="lg">
+        <Button onClick={handleSave} disabled={updateSettings.isPending} size="lg" className="text-white">
           <Save className="h-4 w-4 mr-2" />
           {updateSettings.isPending ? 'Salvando...' : 'Salvar Configurações'}
         </Button>
