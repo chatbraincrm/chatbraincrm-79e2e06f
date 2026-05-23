@@ -1,24 +1,16 @@
-## Problema
+## Objetivo
 
-O usuário `superadmin@vendus.com.br` existe no Lovable Cloud (criado em 22/05 às 08:34, e-mail já confirmado), mas a senha armazenada não bate com `@Mudarsenha#123`. Por isso o endpoint `/auth/v1/token` responde `400 invalid_credentials`.
+Trocar o e-mail do super admin de `superadmin@vendus.com.br` para `chatbraincrm@gmail.com`, mantendo o mesmo usuário (mesmo `user_id`, mesmas roles, mesmo histórico).
 
-## Solução
+## Passos
 
-Rodar uma migration única que atualiza o hash de senha desse usuário diretamente em `auth.users` usando `crypt()` com `bcrypt`, definindo a senha para `@Mudarsenha#123`.
+1. Rodar um `UPDATE` direto em `auth.users` (e em `public.profiles`) trocando o e-mail do usuário atual para `chatbraincrm@gmail.com`, já marcando `email_confirmed_at` para não exigir reconfirmação.
+2. Manter a senha atual (`@Thaisa95`) — só o e-mail muda.
+3. Confirmar com você que o login passa a funcionar em `/login` com:
+  - E-mail: `chatbraincrm@gmail.com`
+  - Senha: `@Thaisa95`
 
-### Passos
+## Observações
 
-1. Executar migration SQL:
-   ```sql
-   UPDATE auth.users
-   SET encrypted_password = crypt('@Mudarsenha#123', gen_salt('bf')),
-       updated_at = now()
-   WHERE email = 'superadmin@vendus.com.br';
-   ```
-2. Confirmar com o usuário para testar login novamente em `/login` com as credenciais informadas.
-
-### Observações
-
-- Não mexe em RLS, triggers ou outras tabelas.
-- Após o primeiro login bem-sucedido recomendo trocar a senha em **Perfil → Segurança**.
-- Se preferir, posso também gerar uma senha temporária aleatória em vez de usar a fornecida no chat (mais seguro, já que ela ficou visível no histórico).
+- Roles (`super_admin` / `admin`) ficam intactas porque estão atreladas ao `user_id`, não ao e-mail.
+- Se `chatbraincrm@gmail.com` já existir como outro usuário no sistema, pode fundir e descartar o antigo.
