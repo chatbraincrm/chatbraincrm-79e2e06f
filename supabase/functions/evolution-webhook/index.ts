@@ -103,6 +103,69 @@ async function recordSentResponse(supabase: any, conversationId: string, text: s
 }
 
 /**
+ * Lazy fetch + save da foto de perfil do WhatsApp. Roda em background
+ * (não bloqueia o webhook). Idempotente: só roda se a conversa ainda
+ * estiver sem `visitor_avatar_url`.
+ */
+async function ensureVisitorAvatar(
+  supabase: any,
+  instance: { id: string; name?: string | null; instance_token?: string | null; organization_id: string },
+  conversationId: string,
+  phone: string,
+): Promise<void> {
+  try {
+    const { data: conv } = await supabase
+      .from("webchat_conversations")
+      .select("visitor_avatar_url")
+      .eq("id", conversationId)
+      .maybeSingle();
+    if (conv?.visitor_avatar_url) return;
+
+    const { data: cfg } = await supabase
+      .from("integration_settings")
+      .select("settings")
+      .eq("organization_id", instance.organization_id)
+      .eq("integration_type", "whatsapp_provider")
+      .maybeSingle();
+    const settings = (cfg as any)?.settings || {};
+    let evoUrl = String(settings.evolution_go_url || "").replace(/\/$/, "");
+    let apiKey: string | undefined =
+      instance.instance_token || settings.evolution_go_global_api_key;
+    if (!evoUrl || !apiKey) {
+      const { data: platformCfg } = await supabase
+        .from("platform_settings")
+        .select("evolution_go_url, evolution_go_global_api_key")
+        .limit(1)
+        .maybeSingle();
+      evoUrl = evoUrl || String((platformCfg as any)?.evolution_go_url || "").replace(/\/$/, "");
+      apiKey = apiKey || (platformCfg as any)?.evolution_go_global_api_key;
+    }
+    if (!evoUrl || !apiKey || !instance.name) return;
+
+    const picResp = await fetch(
+      `${evoUrl}/chat/fetchProfilePictureUrl/${encodeURIComponent(instance.name)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: apiKey },
+        body: JSON.stringify({ number: phone }),
+      },
+    );
+    if (!picResp.ok) return;
+    const picJson = await picResp.json().catch(() => null);
+    const picUrl: string | undefined =
+      picJson?.profilePictureUrl || picJson?.profile_picture_url || picJson?.url;
+    if (picUrl && /^https?:\/\//.test(picUrl)) {
+      await supabase
+        .from("webchat_conversations")
+        .update({ visitor_avatar_url: picUrl })
+        .eq("id", conversationId);
+      console.log("[evolution-webhook] saved visitor_avatar_url for", conversationId);
+    }
+  } catch (e) {
+    console.warn("[evolution-webhook] ensureVisitorAvatar failed (non-fatal):", e);
+  }
+
+/**
  * Adapter that normalizes incoming webhook payloads from BOTH:
  *  - Evolution API v2 (Node.js): events like MESSAGES_UPSERT, CONNECTION_UPDATE, ...
  *  - Evolution Go: events like Message, SendMessage, Connected, QRCode, ...
