@@ -2,9 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { useAdminKPIs, useTopSellers, useProductSalesDistribution, useMonthlySalesEvolution } from '@/hooks/useAdminDashboard';
+import { useAdminKPIs, useTopSellers, useProductSalesDistribution, useMonthlySalesEvolution, useLeadFunnel, useLeadsBySource, useTemperatureDistribution } from '@/hooks/useAdminDashboard';
 import { useAllSquadsPerformance } from '@/hooks/useSquadPerformance';
-import { TrendingUp, TrendingDown, DollarSign, Target, Users, ShoppingCart, Award, Loader2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Target, Users, ShoppingCart, Award, Loader2, Flame, Filter } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const formatCurrency = (value: number) => {
