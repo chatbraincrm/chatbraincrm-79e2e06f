@@ -2147,13 +2147,13 @@ Deno.serve(async (req) => {
       // ============================================================
       // BUFFER CURTO (humanização sem queimar tempo)
       // ============================================================
-      // Lê configurações de humanização da org. Janela padrão = 3s.
-      // Teto absoluto = 8s desde a 1ª msg do burst — nunca mais que isso.
-      // Loop: dorme em fatias de 1s; se chegou nova msg do visitor, deferimos
-      // para a invocação dessa nova msg (que vai re-medir o teto).
+      // Lê configurações de humanização da org. Janela padrão = 1.5s (era 3s).
+      // Teto absoluto = 5s desde a 1ª msg do burst (era 8s) — nunca mais que isso.
+      // Loop: dorme em fatias de 500ms (era 1s); se chegou nova msg do visitor,
+      // deferimos para a invocação dessa nova msg (que vai re-medir o teto).
       let groupingEnabled = true;
-      let groupingWindowMs = 3000;
-      let groupingMaxMs = 8000;
+      let groupingWindowMs = 1500;
+      let groupingMaxMs = 5000;
       let presenceEnabledOrg = true;
       try {
         const { data: orgRow } = await supabase
