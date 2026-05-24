@@ -296,3 +296,155 @@ export function useMonthlySalesEvolution(months = 6) {
     enabled: !!organizationId
   });
 }
+
+export interface FunnelStage {
+  stageId: string;
+  stageName: string;
+  color: string;
+  orderIndex: number;
+  leadCount: number;
+  conversionRate: number; // % vs previous stage
+}
+
+export function useLeadFunnel() {
+  const { profile } = useAuth();
+  const organizationId = profile?.organization_id;
+
+  return useQuery({
+    queryKey: ['lead-funnel', organizationId],
+    queryFn: async (): Promise<FunnelStage[]> => {
+      if (!organizationId) return [];
+
+      const { data: stages } = await supabase
+        .from('pipeline_stages')
+        .select('id, name, color, order_index')
+        .order('order_index', { ascending: true });
+
+      const { data: leads } = await supabase
+        .from('leads')
+        .select('current_stage_id')
+        .eq('organization_id', organizationId);
+
+      const counts = new Map<string, number>();
+      leads?.forEach(l => {
+        if (l.current_stage_id) {
+          counts.set(l.current_stage_id, (counts.get(l.current_stage_id) || 0) + 1);
+        }
+      });
+
+      // Aggregate counts per stage (multiple products may share stages of same name/order)
+      const stageMap = new Map<string, FunnelStage>();
+      stages?.forEach(s => {
+        const key = `${s.order_index}-${s.name}`;
+        const count = counts.get(s.id) || 0;
+        const existing = stageMap.get(key);
+        if (existing) {
+          existing.leadCount += count;
+        } else {
+          stageMap.set(key, {
+            stageId: s.id,
+            stageName: s.name,
+            color: s.color || '#6b7280',
+            orderIndex: s.order_index,
+            leadCount: count,
+            conversionRate: 0,
+          });
+        }
+      });
+
+      const sorted = Array.from(stageMap.values()).sort((a, b) => a.orderIndex - b.orderIndex);
+      const first = sorted[0]?.leadCount || 0;
+      sorted.forEach((s, i) => {
+        if (i === 0) {
+          s.conversionRate = 100;
+        } else {
+          const prev = sorted[i - 1].leadCount;
+          s.conversionRate = prev > 0 ? (s.leadCount / first) * 100 : 0;
+        }
+      });
+
+      return sorted;
+    },
+    enabled: !!organizationId
+  });
+}
+
+export interface LeadSource {
+  source: string;
+  channel: string;
+  count: number;
+}
+
+export function useLeadsBySource() {
+  const { profile } = useAuth();
+  const organizationId = profile?.organization_id;
+
+  return useQuery({
+    queryKey: ['leads-by-source', organizationId],
+    queryFn: async (): Promise<LeadSource[]> => {
+      if (!organizationId) return [];
+      const now = new Date();
+      const monthStart = format(startOfMonth(now), 'yyyy-MM-dd');
+
+      const { data: leads } = await supabase
+        .from('leads')
+        .select('lead_origin, lead_channel, utm_source')
+        .eq('organization_id', organizationId)
+        .gte('created_at', monthStart);
+
+      const map = new Map<string, LeadSource>();
+      leads?.forEach(l => {
+        const source = l.lead_origin || l.utm_source || 'Direto';
+        const channel = l.lead_channel || 'outro';
+        const key = `${source}|${channel}`;
+        const existing = map.get(key);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          map.set(key, { source, channel, count: 1 });
+        }
+      });
+
+      return Array.from(map.values()).sort((a, b) => b.count - a.count).slice(0, 8);
+    },
+    enabled: !!organizationId
+  });
+}
+
+export interface TemperatureBucket {
+  temperature: 'hot' | 'warm' | 'cold' | 'unset';
+  label: string;
+  count: number;
+  color: string;
+}
+
+export function useTemperatureDistribution() {
+  const { profile } = useAuth();
+  const organizationId = profile?.organization_id;
+
+  return useQuery({
+    queryKey: ['temperature-distribution', organizationId],
+    queryFn: async (): Promise<TemperatureBucket[]> => {
+      if (!organizationId) return [];
+
+      const { data: leads } = await supabase
+        .from('leads')
+        .select('temperature')
+        .eq('organization_id', organizationId);
+
+      const buckets: Record<string, number> = { hot: 0, warm: 0, cold: 0, unset: 0 };
+      leads?.forEach(l => {
+        const t = (l.temperature || 'unset') as string;
+        buckets[t] = (buckets[t] || 0) + 1;
+      });
+
+      return [
+        { temperature: 'hot', label: 'Quente', count: buckets.hot, color: 'hsl(0, 84%, 60%)' },
+        { temperature: 'warm', label: 'Morno', count: buckets.warm, color: 'hsl(38, 92%, 50%)' },
+        { temperature: 'cold', label: 'Frio', count: buckets.cold, color: 'hsl(199, 89%, 60%)' },
+        { temperature: 'unset', label: 'Não classificado', count: buckets.unset, color: 'hsl(220, 9%, 60%)' },
+      ];
+    },
+    enabled: !!organizationId
+  });
+}
