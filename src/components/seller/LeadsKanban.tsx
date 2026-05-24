@@ -15,6 +15,9 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { DealModal } from '@/components/seller/DealModal';
 import { LeadDetailPage } from '@/components/lead/LeadDetailPage';
 import { SquadQueueBanner } from '@/components/seller/SquadQueueBanner';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { computeBantScore, getBantTier } from '@/lib/bantScore';
 import { cn } from '@/lib/utils';
 import { 
   Plus, 
@@ -30,9 +33,17 @@ import {
   ThermometerSun,
   Loader2,
   Eye,
-  DollarSign
+  DollarSign,
+  MessageCircle,
+  Instagram,
+  Facebook,
+  Globe,
+  Clock,
+  Target
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 
 interface LeadsKanbanProps {
