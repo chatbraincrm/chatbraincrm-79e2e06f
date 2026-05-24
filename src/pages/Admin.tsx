@@ -37,6 +37,7 @@ const f = {
   CompanySettings: () => import('@/components/admin/company/CompanySettings').then(m => ({ default: m.CompanySettings })),
   SupportTickets: () => import('@/components/admin/support/SupportTickets').then(m => ({ default: m.SupportTickets })),
   QuickRepliesManager: () => import('@/components/admin/QuickRepliesManager').then(m => ({ default: m.QuickRepliesManager })),
+  LeadTemperatureRulesManager: () => import('@/components/admin/leads/LeadTemperatureRulesManager').then(m => ({ default: m.LeadTemperatureRulesManager })),
 };
 
 // Lazy components (com retry + cache compartilhado para prefetch).
