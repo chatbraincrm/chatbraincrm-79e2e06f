@@ -779,14 +779,14 @@ export function SellerInbox({ productId, pendingConversationId, onConversationSe
 
   if (loadingConversations) {
     return (
-      <div className="h-[calc(100dvh-8rem)] flex items-center justify-center">
+      <div className="h-full min-h-[400px] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100dvh-8rem)] flex flex-col rounded-lg border border-border overflow-hidden bg-background">
+    <div className="h-full min-h-[400px] flex flex-col rounded-lg border border-border overflow-hidden bg-background">
 
       <div className="flex-1 flex min-w-0 overflow-hidden">
         {/* Conversation List with new look */}
