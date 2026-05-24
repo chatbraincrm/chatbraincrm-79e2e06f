@@ -1005,6 +1005,14 @@ Deno.serve(async (req) => {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
               });
             }
+            // Dedupe 2b: o próprio bot acabou de mandar essa resposta (sent_responses)
+            // — cobre a janela entre `sendEvo` e o insert em webchat_messages.
+            if (await isDuplicateResponse(supabase, convOut.id, norm.content, 60_000)) {
+              console.log("[evolution-webhook] external_outbound: dedupe_sent_responses_match");
+              return new Response(JSON.stringify({ ok: true, skipped: "outbound_echo_bot" }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
           }
 
           if (convOut?.id && convOut.status === "closed") {
