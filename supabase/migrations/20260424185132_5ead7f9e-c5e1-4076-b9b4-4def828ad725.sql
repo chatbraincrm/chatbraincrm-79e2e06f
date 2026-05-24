@@ -81,6 +81,16 @@ CREATE TRIGGER update_platform_plans_updated_at
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- 2. Adicionar plan_id em organizations e subscriptions
+-- Drop old TEXT plan_id if it exists (pre-platform_plans era)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'organizations' AND column_name = 'plan_id'
+  ) THEN
+    ALTER TABLE public.organizations DROP COLUMN plan_id;
+  END IF;
+END $$;
 ALTER TABLE public.organizations
   ADD COLUMN plan_id UUID REFERENCES public.platform_plans(id) ON DELETE SET NULL;
 

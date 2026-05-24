@@ -1,4 +1,4 @@
-DROP POLICY "Admins can manage email templates" ON public.email_templates;
+DROP POLICY IF EXISTS "Admins can manage email templates" ON public.email_templates;
 
 CREATE POLICY "Admins can manage email templates"
 ON public.email_templates

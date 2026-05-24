@@ -1,5 +1,5 @@
 -- Tabela principal de webhooks
-CREATE TABLE webhooks (
+CREATE TABLE IF NOT EXISTS webhooks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID REFERENCES organizations(id) NOT NULL,
   
@@ -68,7 +68,7 @@ USING (
 );
 
 -- Tabela de logs de requisições
-CREATE TABLE webhook_logs (
+CREATE TABLE IF NOT EXISTS webhook_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   webhook_id UUID REFERENCES webhooks(id) ON DELETE CASCADE NOT NULL,
   
@@ -118,7 +118,7 @@ ON webhook_logs FOR INSERT
 WITH CHECK (true);
 
 -- Tabela de requisições de exemplo
-CREATE TABLE webhook_sample_requests (
+CREATE TABLE IF NOT EXISTS webhook_sample_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   webhook_id UUID REFERENCES webhooks(id) ON DELETE CASCADE NOT NULL,
   

@@ -38,6 +38,16 @@ CREATE TRIGGER trg_product_suites_updated
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- 2. products.suite_id
+-- Drop old suite_id if it exists without the FK (pre-product_suites era)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'suite_id'
+  ) THEN
+    ALTER TABLE public.products DROP COLUMN suite_id;
+  END IF;
+END $$;
 ALTER TABLE public.products
   ADD COLUMN suite_id uuid REFERENCES public.product_suites(id) ON DELETE SET NULL;
 
