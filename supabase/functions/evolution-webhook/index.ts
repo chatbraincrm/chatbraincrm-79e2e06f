@@ -1461,6 +1461,7 @@ Deno.serve(async (req) => {
         // Auto-create lead if none exists for this contact (no manual linking).
         if (!lead?.id) {
           try {
+            const autoProductId = await resolveSingleProductId(supabase, instance.organization_id);
             const { data: createdLead, error: createLeadErr } = await supabase
               .from("leads")
               .insert({
@@ -1468,6 +1469,7 @@ Deno.serve(async (req) => {
                 name: senderName || phoneCanonical,
                 phone: phoneCanonical,
                 source: "whatsapp",
+                ...(autoProductId ? { product_id: autoProductId } : {}),
               })
               .select("id, name")
               .single();
