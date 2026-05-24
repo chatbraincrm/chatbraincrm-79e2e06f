@@ -1,92 +1,62 @@
-## Plano consolidado — 7 correções
 
-### Bloco A · Inbox WhatsApp (4 problemas anteriores)
+# Checkup Completo do Sistema
 
-#### A1) Mensagem da IA duplicada
-Confirmado no banco: cada resposta da IA gera **2 linhas** em `webchat_messages` — uma `sender_type=bot` (gravada pelo `webchat-bot` antes de enviar) e outra `sender_type=agent`/`metadata.source=external_device` (gravada pelo `evolution-webhook` quando o Evolution devolve o próprio envio como `fromMe=true`).
+Vou conduzir em **3 fases** para você aprovar uma vez só e eu executar até o fim, reportando os achados ao final de cada fase.
 
-**Fix:** em `supabase/functions/evolution-webhook/index.ts` (bloco `external_outbound`, ~linha 1093), antes do insert:
-- Buscar nos últimos 10s uma `webchat_messages` da mesma `conversation_id` com `direction=outbound` e `content` idêntico (ou `metadata.external_id = norm.messageId`).
-- Se achar: apenas patch (`metadata.external_id`, `metadata.delivered_via='whatsapp'`) e retornar `{ ok:true, deduped:true }`. Não inserir.
-- Senão: insert atual (cobre envio real pelo celular).
+## Fase 1 — Varredura técnica automatizada (sem mudança de código)
 
-#### A2) `#fe43fd` embaixo do nome parece código de cor
-É o `ticketCode = conversation.id.slice(0,6)` renderizado em `ChatArea.tsx:362`.
-**Fix:** remover o `· #{ticketCode}` do header principal e manter só no menu `…` "Detalhes do ticket" se necessário.
+Rodo em paralelo e te entrego um **relatório priorizado** (P0/P1/P2):
 
-#### A3) Foto do contato não aparece no WhatsApp
-`visitor_avatar_url` é null pra conversas Evolution — o webhook nunca grava.
-**Fix:** no `evolution-webhook`, quando o payload trouxer `profilePicUrl`/`pushName.profilePictureUrl`, atualizar `webchat_conversations.visitor_avatar_url` no upsert. Para conversas existentes sem foto, fazer fetch único em background via Evolution `/chat/fetchProfilePictureUrl/{instance}` na primeira mensagem nova.
+1. **Linter do banco** (`supabase--linter`) — RLS faltando, funções inseguras, índices ausentes.
+2. **Security scan** (`security--run_security_scan`) — vazamento de dados, policies frouxas.
+3. **Saúde do banco** (`db_health`) — saturação de conexão, deadlocks, OOM, WAL.
+4. **Logs recentes de Edge Functions críticas** — `evolution-webhook`, `webchat-bot`, `webchat-inbox`, `ai-followup-cron`, `start-whatsapp-conversation` (últimas 24 h, filtrando erros).
+5. **Queries de integridade de dados**:
+   - Leads órfãos (sem `product_id`, sem `current_stage_id`, sem `temperature`).
+   - Conversas sem `last_message`, sem `visitor_avatar_url`, em `waiting_human` há > 1 h.
+   - Conversas duplicadas por `phone + organization_id`.
+   - Mensagens duplicadas (`external_id` repetido em < 30 s).
+   - `pipeline_stages` sem cor / sem ordem.
+   - Triggers e RLS de `enforce_single_attendant` aplicados.
 
-#### A4) Card mostra "Nova conversa" no lugar da última mensagem
-`webchat_conversations.last_message` **não existe** (erro confirmado: `column "last_message" does not exist`), então `conv.last_message` é sempre `undefined` e cai no fallback.
+Já detectei na pré-varredura: **2 leads sem produto** e **3 conversas WhatsApp sem avatar**.
 
-**Fix:** migration:
-```sql
-ALTER TABLE webchat_conversations
-  ADD COLUMN last_message text,
-  ADD COLUMN last_message_metadata jsonb;
+## Fase 2 — Auditoria guiada dos bugs que você já apontou
 
-CREATE OR REPLACE FUNCTION update_conversation_last_message()
-RETURNS trigger AS $$
-BEGIN
-  UPDATE webchat_conversations
-     SET last_message = NEW.content,
-         last_message_metadata = NEW.metadata,
-         last_message_at = NEW.created_at
-   WHERE id = NEW.conversation_id;
-  RETURN NEW;
-END $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+Investigo cada um, identifico causa-raiz e listo o fix proposto **antes** de aplicar:
 
-CREATE TRIGGER trg_update_conv_last_message
-  AFTER INSERT ON webchat_messages
-  FOR EACH ROW EXECUTE FUNCTION update_conversation_last_message();
-```
-Backfill único pra preencher as conversas que já existem.
+| # | Bug relatado | Onde vou investigar |
+|---|---|---|
+| 1 | Bugs no Inbox (atendimento) | `SellerInbox.tsx`, `ConversationList.tsx`, `ChatArea.tsx`, realtime subscriptions |
+| 2 | Bug na IA (resposta/comportamento) | `webchat-bot/index.ts`, `agent_action_logs`, prompt e roteamento |
+| 3 | Bug para passar atendimento IA → humano | `TransferConversationModal.tsx`, trigger `enforce_single_attendant`, `useAcceptConversation` |
+| 4 | Temperatura do lead não aparece na Central de Leads | `LeadsManager`, `LeadHeader`, render do badge (Flame/Snowflake/ThermometerSun) |
+| 5 | Lentidão no envio/recebimento WhatsApp | Timing de `evolution-webhook` (debounce 4 s + chunking 800 ms), `EdgeRuntime.waitUntil`, fila de chunks, latência Evolution |
+| 6 | Card do Pipeline com pouca info | `LeadsKanban.tsx` — adicionar: temperatura, último contato, canal de origem, tags principais, valor, dono |
+| 7 | Dashboard de atendimento com "em breve" | `WebChatReportsTab.tsx` + itens marcados `comingSoon` no `adminMenu.ts` — listar e implementar relatórios faltantes (taxa resolução IA, SLA por setor, ranking de atendentes, distribuição por canal, heatmap de horário) |
 
----
+## Fase 3 — Aplicar correções (com sua confirmação por bloco)
 
-### Bloco B · Pipeline & ferramenta da IA (3 problemas novos)
+Agrupo os fixes em blocos pequenos e seguros:
 
-#### B1) IA enviou "Lead movido no pipeline com sucesso." ao cliente
-Bug em `supabase/functions/webchat-bot/index.ts:3834`:
-```ts
-responseContent = choice.message?.content || 'Lead movido no pipeline com sucesso.';
-```
-`move_pipeline_stage` é tool **silenciosa**, mas o fallback transformou o "log interno" em mensagem pro WhatsApp.
+- **Bloco A — Dados** (backfill de leads órfãos, temperaturas, avatars).
+- **Bloco B — Inbox/IA/Handoff** (bugs 1, 2, 3).
+- **Bloco C — Pipeline card enriquecido** (bug 6).
+- **Bloco D — Performance WhatsApp** (bug 5 — provavelmente `waitUntil` no webhook + revisão do debounce).
+- **Bloco E — Dashboard de atendimento completo** (bug 7).
+- **Bloco F — Achados da varredura técnica** (P0/P1 primeiro).
 
-**Fix:**
-- Trocar fallback para `''` (silencioso, igual `apply_tags` / `remove_tags`).
-- Validar que `stage_id` existe e pegar o `product_id` dele.
-- Se o lead estiver sem `product_id`, preencher junto com `current_stage_id`.
+Cada bloco vira um commit isolado, fácil de reverter se algo regredir.
 
-#### B2) Lead não aparece no Pipeline
-Lead Thaisa tem `product_id = NULL`. `useKanbanData` filtra com `.eq('product_id', productId)`, então o pipeline ignora.
+## Detalhes técnicos
 
-**Fix:** na criação automática de lead (regra "Auto-Lead on Conversation"), se a org tem **exatamente 1 produto ativo**, gravar `product_id` desse produto direto. Multi-produto continua sem produto (o operador/IA decide).
+- Nada será alterado na Fase 1 (somente leitura).
+- Fase 2 só roda queries e leitura de código/logs.
+- Fase 3 respeita as regras já memorizadas: `enforce_single_attendant`, debounce/chunking do WhatsApp, multi-tenant scoping, RLS, normalização DDI 55, `delete_team_member` RPC.
+- Bugs que dependerem de reprodução manual no preview (ex: "ao clicar em X acontece Y"), vou te pedir um print ou os passos exatos antes de fechar.
 
-#### B3) Lead aparece na Central de Leads
-É o comportamento esperado (`useLeads()` sem filtro de produto lista tudo). Some quando A2 corrigir a falta de `product_id`.
+## O que eu preciso de você
 
-**Backfill seguro** (rodar 1 vez):
-```sql
-UPDATE leads l
-   SET product_id = (
-     SELECT id FROM products
-      WHERE organization_id = l.organization_id AND is_active = true
-      LIMIT 1
-   )
- WHERE l.product_id IS NULL
-   AND (SELECT COUNT(*) FROM products
-         WHERE organization_id = l.organization_id AND is_active = true) = 1;
-```
+Nada agora — só aprovar o plano. Conforme eu for executando, posso te pedir detalhe de algum sintoma específico (ex: "o bug da IA é resposta errada, duplicada, ou ela trava?").
 
----
-
-## Arquivos afetados
-- `supabase/functions/evolution-webhook/index.ts` — A1 (dedupe eco), A3 (avatar), B2 (auto-vincular produto único na criação de lead)
-- `supabase/functions/webchat-bot/index.ts` — B1 (fix `move_pipeline_stage`)
-- `src/components/seller/inbox/ChatArea.tsx` — A2 (remover ticketCode do header)
-- Nova migration SQL — A4 (coluna `last_message` + trigger + backfill) e B3 (backfill `product_id`)
-
-Aprova esse plano consolidado?
+Posso começar?
