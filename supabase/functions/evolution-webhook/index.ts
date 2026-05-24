@@ -164,6 +164,30 @@ async function ensureVisitorAvatar(
   } catch (e) {
     console.warn("[evolution-webhook] ensureVisitorAvatar failed (non-fatal):", e);
   }
+}
+
+/**
+ * Retorna o product_id se a organização tem exatamente 1 produto cadastrado.
+ * Usado para auto-vincular leads recém-criados (WhatsApp/inbox) ao único
+ * produto, garantindo que apareçam no Pipeline.
+ */
+async function resolveSingleProductId(
+  supabase: any,
+  organizationId: string,
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .limit(2);
+    if (error || !data || data.length !== 1) return null;
+    return (data[0] as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 
 /**
  * Adapter that normalizes incoming webhook payloads from BOTH:
