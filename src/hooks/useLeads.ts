@@ -13,7 +13,10 @@ export function useLeads(productId?: string) {
         .from('leads')
         .select(`
           *,
-          pipeline_stages (*)
+          pipeline_stages (*),
+          assignee:profiles!leads_assigned_to_fkey(id, full_name, avatar_url),
+          sdr:profiles!leads_sdr_id_fkey(id, full_name, avatar_url),
+          closer:profiles!leads_closer_id_fkey(id, full_name, avatar_url)
         `)
         .order('created_at', { ascending: false });
       
