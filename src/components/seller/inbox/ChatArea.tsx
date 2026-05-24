@@ -359,7 +359,6 @@ export function ChatArea({
             </div>
             <div className="text-[11px] text-muted-foreground truncate">
               {mobileStatusLine}
-              {ticketCode && <span className="ml-1.5 font-mono">· #{ticketCode}</span>}
               {sectorName && <span className="ml-1.5">· {sectorName}</span>}
             </div>
           </button>
@@ -468,10 +467,6 @@ export function ChatArea({
               <ChannelBadge channel={channel} size="sm" />
             </div>
             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0 truncate">
-              {ticketCode && (
-                <span className="font-mono text-foreground/70">#{ticketCode}</span>
-              )}
-              {ticketCode && <span>·</span>}
               <div className={cn("h-1.5 w-1.5 rounded-full", getStatusColor())} />
               <span>{getStatusText()}</span>
               {productName && (
