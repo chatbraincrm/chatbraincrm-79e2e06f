@@ -222,6 +222,7 @@ export default function Admin() {
             // Aria para acessibilidade quando a seção está oculta.
             aria-hidden={!isActive}
             style={!isActive ? { display: 'none' } : undefined}
+            className={isActive ? 'h-full' : undefined}
           >
             <SectionErrorBoundary sectionName={sectionId}>
               {/* fallback={null} = nunca mostra spinner; useTransition mantém
