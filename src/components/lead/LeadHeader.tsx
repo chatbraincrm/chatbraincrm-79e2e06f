@@ -26,7 +26,7 @@ interface LeadHeaderProps {
     position?: string | null;
     product_id?: string | null;
     temperature?: 'hot' | 'warm' | 'cold' | null;
-    temperature_manual_override?: 'hot' | 'warm' | 'cold' | null;
+    temperature_manual_override?: boolean | null;
     temperature_score?: number | null;
     assigned_to?: string | null;
     assignee?: {
