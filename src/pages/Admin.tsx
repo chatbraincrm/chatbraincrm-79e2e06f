@@ -203,6 +203,7 @@ export default function Admin() {
       case 'company': return <CompanySettings />;
       case 'support': return <SupportTickets scope="admin" />;
       case 'quick-replies': return <QuickRepliesManager />;
+      case 'lead-temperature': return <LeadTemperatureRulesManager />;
       default: return <AdminDashboard />;
     }
   };
