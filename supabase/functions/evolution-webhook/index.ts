@@ -103,6 +103,93 @@ async function recordSentResponse(supabase: any, conversationId: string, text: s
 }
 
 /**
+ * Lazy fetch + save da foto de perfil do WhatsApp. Roda em background
+ * (não bloqueia o webhook). Idempotente: só roda se a conversa ainda
+ * estiver sem `visitor_avatar_url`.
+ */
+async function ensureVisitorAvatar(
+  supabase: any,
+  instance: { id: string; name?: string | null; instance_token?: string | null; organization_id: string },
+  conversationId: string,
+  phone: string,
+): Promise<void> {
+  try {
+    const { data: conv } = await supabase
+      .from("webchat_conversations")
+      .select("visitor_avatar_url")
+      .eq("id", conversationId)
+      .maybeSingle();
+    if (conv?.visitor_avatar_url) return;
+
+    const { data: cfg } = await supabase
+      .from("integration_settings")
+      .select("settings")
+      .eq("organization_id", instance.organization_id)
+      .eq("integration_type", "whatsapp_provider")
+      .maybeSingle();
+    const settings = (cfg as any)?.settings || {};
+    let evoUrl = String(settings.evolution_go_url || "").replace(/\/$/, "");
+    let apiKey: string | undefined =
+      instance.instance_token || settings.evolution_go_global_api_key;
+    if (!evoUrl || !apiKey) {
+      const { data: platformCfg } = await supabase
+        .from("platform_settings")
+        .select("evolution_go_url, evolution_go_global_api_key")
+        .limit(1)
+        .maybeSingle();
+      evoUrl = evoUrl || String((platformCfg as any)?.evolution_go_url || "").replace(/\/$/, "");
+      apiKey = apiKey || (platformCfg as any)?.evolution_go_global_api_key;
+    }
+    if (!evoUrl || !apiKey || !instance.name) return;
+
+    const picResp = await fetch(
+      `${evoUrl}/chat/fetchProfilePictureUrl/${encodeURIComponent(instance.name)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: apiKey },
+        body: JSON.stringify({ number: phone }),
+      },
+    );
+    if (!picResp.ok) return;
+    const picJson = await picResp.json().catch(() => null);
+    const picUrl: string | undefined =
+      picJson?.profilePictureUrl || picJson?.profile_picture_url || picJson?.url;
+    if (picUrl && /^https?:\/\//.test(picUrl)) {
+      await supabase
+        .from("webchat_conversations")
+        .update({ visitor_avatar_url: picUrl })
+        .eq("id", conversationId);
+      console.log("[evolution-webhook] saved visitor_avatar_url for", conversationId);
+    }
+  } catch (e) {
+    console.warn("[evolution-webhook] ensureVisitorAvatar failed (non-fatal):", e);
+  }
+}
+
+/**
+ * Retorna o product_id se a organização tem exatamente 1 produto cadastrado.
+ * Usado para auto-vincular leads recém-criados (WhatsApp/inbox) ao único
+ * produto, garantindo que apareçam no Pipeline.
+ */
+async function resolveSingleProductId(
+  supabase: any,
+  organizationId: string,
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .limit(2);
+    if (error || !data || data.length !== 1) return null;
+    return (data[0] as any)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+
+/**
  * Adapter that normalizes incoming webhook payloads from BOTH:
  *  - Evolution API v2 (Node.js): events like MESSAGES_UPSERT, CONNECTION_UPDATE, ...
  *  - Evolution Go: events like Message, SendMessage, Connected, QRCode, ...
@@ -1005,6 +1092,14 @@ Deno.serve(async (req) => {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
               });
             }
+            // Dedupe 2b: o próprio bot acabou de mandar essa resposta (sent_responses)
+            // — cobre a janela entre `sendEvo` e o insert em webchat_messages.
+            if (await isDuplicateResponse(supabase, convOut.id, norm.content, 60_000)) {
+              console.log("[evolution-webhook] external_outbound: dedupe_sent_responses_match");
+              return new Response(JSON.stringify({ ok: true, skipped: "outbound_echo_bot" }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
           }
 
           if (convOut?.id && convOut.status === "closed") {
@@ -1039,6 +1134,7 @@ Deno.serve(async (req) => {
           }
 
           if (!convOut?.id) {
+            const autoProductId = await resolveSingleProductId(supabase, instance.organization_id);
             const { data: newLead, error: newLeadErr } = await supabase
               .from("leads")
               .insert({
@@ -1046,6 +1142,7 @@ Deno.serve(async (req) => {
                 name: norm.pushName || targetPhone,
                 phone: targetPhone,
                 source: "whatsapp",
+                ...(autoProductId ? { product_id: autoProductId } : {}),
               })
               .select("id")
               .single();
@@ -1243,6 +1340,8 @@ Deno.serve(async (req) => {
 
       if (existing) {
         conversationId = existing.id;
+        // Lazy avatar fetch para conversas antigas sem foto.
+        ensureVisitorAvatar(supabase, instance, conversationId, phone).catch(() => {});
 
         // Read current_agent_id + agent_type + orchestrator state to decide whether
         // we can/should reassign an instance-bound agent here.
@@ -1362,6 +1461,7 @@ Deno.serve(async (req) => {
         // Auto-create lead if none exists for this contact (no manual linking).
         if (!lead?.id) {
           try {
+            const autoProductId = await resolveSingleProductId(supabase, instance.organization_id);
             const { data: createdLead, error: createLeadErr } = await supabase
               .from("leads")
               .insert({
@@ -1369,6 +1469,7 @@ Deno.serve(async (req) => {
                 name: senderName || phoneCanonical,
                 phone: phoneCanonical,
                 source: "whatsapp",
+                ...(autoProductId ? { product_id: autoProductId } : {}),
               })
               .select("id, name")
               .single();
@@ -1614,54 +1715,7 @@ Deno.serve(async (req) => {
         }));
 
         // Fire-and-forget: enrich with WhatsApp profile picture (best effort, non-blocking).
-        // Pulled from Evolution Go: GET /chat/findContacts or /chat/fetchProfilePictureUrl.
-        try {
-          const { data: cfg } = await supabase
-            .from("integration_settings")
-            .select("settings")
-            .eq("organization_id", instance.organization_id)
-            .eq("integration_type", "whatsapp_provider")
-            .maybeSingle();
-          const settings = (cfg as any)?.settings || {};
-          let evoUrl = String(settings.evolution_go_url || "").replace(/\/$/, "");
-          let apiKey: string | undefined =
-            instance.instance_token || settings.evolution_go_global_api_key;
-          if (!evoUrl || !apiKey) {
-            const { data: platformCfg } = await supabase
-              .from("platform_settings")
-              .select("evolution_go_url, evolution_go_global_api_key")
-              .limit(1)
-              .maybeSingle();
-            evoUrl = evoUrl || String((platformCfg as any)?.evolution_go_url || "").replace(/\/$/, "");
-            apiKey = apiKey || (platformCfg as any)?.evolution_go_global_api_key;
-          }
-          if (evoUrl && apiKey && instance.name) {
-            const picResp = await fetch(
-              `${evoUrl}/chat/fetchProfilePictureUrl/${encodeURIComponent(instance.name)}`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json", apikey: apiKey },
-                body: JSON.stringify({ number: phone }),
-              },
-            );
-            if (picResp.ok) {
-              const picJson = await picResp.json().catch(() => null);
-              const picUrl: string | undefined =
-                picJson?.profilePictureUrl || picJson?.profile_picture_url || picJson?.url;
-              if (picUrl && /^https?:\/\//.test(picUrl)) {
-                await supabase
-                  .from("webchat_conversations")
-                  .update({ visitor_avatar_url: picUrl })
-                  .eq("id", conversationId);
-                console.log("[evolution-webhook] saved visitor_avatar_url for", conversationId);
-              }
-            } else {
-              console.log("[evolution-webhook] profile pic lookup status", picResp.status);
-            }
-          }
-        } catch (picErr) {
-          console.warn("[evolution-webhook] profile pic lookup failed (non-fatal):", picErr);
-        }
+        ensureVisitorAvatar(supabase, instance, conversationId, phone).catch(() => {});
 
         // Safety net: fecha qualquer outra conversa aberta do mesmo telefone normalizado
         const { error: closeErr } = await supabase
@@ -2758,8 +2812,10 @@ Deno.serve(async (req) => {
                 });
                 await new Promise((r) => setTimeout(r, typingMs));
 
-                // 2) Envia o balão
+                // 2) Envia o balão — registra o hash ANTES do envio para
+                // que o eco fromMe do Evolution já encontre o dedupe pronto.
                 let externalId: string | null = null;
+                await recordSentResponse(supabase, conversationId, text);
                 try {
                   const sendRes = await sendEvo({
                     organization_id: instance.organization_id,
@@ -2770,9 +2826,6 @@ Deno.serve(async (req) => {
                   });
                   const sendBody = await sendRes.text();
                   console.log("[evolution-webhook] bot_send chunk", i + 1, "/", chunks.length, "status:", sendRes.status, "body:", sendBody.slice(0, 200));
-                  if (sendRes.ok) {
-                    await recordSentResponse(supabase, conversationId, text);
-                  }
                   try {
                     const parsed = JSON.parse(sendBody);
                     externalId =

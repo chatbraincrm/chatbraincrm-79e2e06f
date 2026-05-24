@@ -9605,7 +9605,9 @@ export type Database = {
           flow_source: string | null
           flow_variables: Json | null
           id: string
+          last_message: string | null
           last_message_at: string | null
+          last_message_metadata: Json | null
           lead_created_at: string | null
           lead_id: string | null
           meeting_event_id: string | null
@@ -9661,7 +9663,9 @@ export type Database = {
           flow_source?: string | null
           flow_variables?: Json | null
           id?: string
+          last_message?: string | null
           last_message_at?: string | null
+          last_message_metadata?: Json | null
           lead_created_at?: string | null
           lead_id?: string | null
           meeting_event_id?: string | null
@@ -9717,7 +9721,9 @@ export type Database = {
           flow_source?: string | null
           flow_variables?: Json | null
           id?: string
+          last_message?: string | null
           last_message_at?: string | null
+          last_message_metadata?: Json | null
           lead_created_at?: string | null
           lead_id?: string | null
           meeting_event_id?: string | null

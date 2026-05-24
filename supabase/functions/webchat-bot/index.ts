@@ -3828,10 +3828,33 @@ REGRAS DE USO:
 
 
                 if (toolName === 'move_pipeline_stage' && leadId) {
-                  await supabase.from('leads').update({ current_stage_id: args.stage_id }).eq('id', leadId);
-                  await supabase.from('lead_stage_history').insert({ lead_id: leadId, stage_id: args.stage_id, changed_by: null });
-                  await logAction(true, { stage_id: args.stage_id });
-                  responseContent = choice.message?.content || 'Lead movido no pipeline com sucesso.';
+                  // Valida o stage e descobre o product_id ao qual ele pertence.
+                  const { data: stageRow } = await supabase
+                    .from('pipeline_stages')
+                    .select('id, product_id')
+                    .eq('id', args.stage_id)
+                    .maybeSingle();
+
+                  if (!stageRow) {
+                    await logAction(false, args, 'stage_not_found');
+                  } else {
+                    // Se o lead ainda não tem product_id, herda o do stage para
+                    // que ele apareça no Pipeline.
+                    const { data: leadRow } = await supabase
+                      .from('leads')
+                      .select('product_id')
+                      .eq('id', leadId)
+                      .maybeSingle();
+                    const updates: Record<string, unknown> = { current_stage_id: args.stage_id };
+                    if (!leadRow?.product_id && stageRow.product_id) {
+                      updates.product_id = stageRow.product_id;
+                    }
+                    await supabase.from('leads').update(updates).eq('id', leadId);
+                    await supabase.from('lead_stage_history').insert({ lead_id: leadId, stage_id: args.stage_id, changed_by: null });
+                    await logAction(true, { stage_id: args.stage_id, product_id: stageRow.product_id });
+                  }
+                  // Tool silenciosa: nunca enviar fallback para o cliente.
+                  responseContent = choice.message?.content || '';
                 } else if (toolName === 'apply_tags' && leadId) {
                   const { data: currentLead } = await supabase.from('leads').select('tags').eq('id', leadId).maybeSingle();
                   const currentTags = currentLead?.tags || [];
