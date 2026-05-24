@@ -85,7 +85,7 @@ export const menuGroups: AdminMenuGroup[] = [
       { id: 'connections', label: 'Conexões', icon: Plug },
       { id: 'integrations', label: 'Integrações', icon: Settings },
       { id: 'quick-replies', label: 'Respostas Rápidas', icon: MessageSquare },
-      { id: 'lead-temperature', label: 'Temperatura do Lead', icon: Tag },
+      { id: 'lead-temperature', label: 'Temperatura do Lead', icon: Thermometer },
       { id: 'custom-fields', label: 'Campos personalizados', icon: FileText },
       { id: 'tags', label: 'Etiquetas', icon: Tag },
       { id: 'notifications', label: 'Notificações', icon: Bell },
