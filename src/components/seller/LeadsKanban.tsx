@@ -319,93 +319,139 @@ export function LeadsKanban({ productId, productName, organizationId, onWhatsApp
 
               {/* Column Content */}
               <div className="flex-1 min-h-0 overflow-y-auto p-2 rounded-b-xl border border-border bg-secondary/30 space-y-2">
-                {stageLeads.map((lead) => (
+                {stageLeads.map((lead) => {
+                  const bantScore = computeBantScore(lead as any);
+                  const bantTier = getBantTier(bantScore);
+                  const owner = (lead as any).closer || (lead as any).sdr || (lead as any).assignee;
+                  const ownerRole = (lead as any).closer ? 'Closer' : (lead as any).sdr ? 'SDR' : 'Responsável';
+
+                  return (
                   <div
                     key={lead.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, lead.id)}
                     className={cn(
-                      "p-4 rounded-lg border border-border bg-card cursor-grab group",
+                      "p-3 rounded-lg border border-border bg-card cursor-grab group",
                       "hover:border-primary/50 hover:shadow-md transition-all",
                       "active:cursor-grabbing",
                       draggedLeadId === lead.id && "opacity-50"
                     )}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <GripVertical size={14} className="text-muted-foreground" />
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <User size={14} className="text-primary" />
-                        </div>
+                    {/* Top row: drag + temperature + actions */}
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <GripVertical size={14} className="text-muted-foreground flex-shrink-0" />
+                        <h4 
+                          className="font-medium text-sm text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+                          onClick={() => {
+                            setSelectedLeadId(lead.id);
+                            setDetailModalOpen(true);
+                          }}
+                        >
+                          {lead.name}
+                        </h4>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
                         {getTemperatureIcon(lead.temperature)}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedLeadId(lead.id);
                             setDetailModalOpen(true);
                           }}
                         >
-                          <Eye size={14} />
+                          <Eye size={12} />
                         </Button>
                       </div>
                     </div>
-                    
-                    <h4 
-                      className="font-medium text-foreground mb-1 cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => {
-                        setSelectedLeadId(lead.id);
-                        setDetailModalOpen(true);
-                      }}
-                    >
-                      {lead.name}
-                    </h4>
-                    
+
+                    {/* Company */}
                     {lead.company && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                        <Building size={12} />
-                        <span>{lead.company}</span>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+                        <Building size={11} />
+                        <span className="truncate">{lead.company}</span>
                       </div>
                     )}
 
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      {lead.email && (
-                        <div className="flex items-center gap-1">
-                          <Mail size={10} />
-                          <span className="truncate max-w-[100px]">{lead.email}</span>
-                        </div>
-                      )}
-                      {lead.phone && (
-                        <div className="flex items-center gap-1">
-                          <Phone size={10} />
-                          <span>{lead.phone}</span>
+                    {/* BANT + last contact line */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "h-5 px-1.5 text-[10px] font-semibold gap-1 border",
+                                bantTier === 'high' && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+                                bantTier === 'good' && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
+                                bantTier === 'partial' && "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30",
+                                bantTier === 'low' && "bg-destructive/10 text-destructive border-destructive/30"
+                              )}
+                            >
+                              <Target size={10} />
+                              BANT {bantScore}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>Qualificação BANT: {bantScore}/100</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      {lead.last_contact_at && (
+                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                          {getChannelIcon(lead.lead_channel)}
+                          <Clock size={10} />
+                          <span>
+                            {formatDistanceToNow(new Date(lead.last_contact_at), { locale: ptBR, addSuffix: false })}
+                          </span>
                         </div>
                       )}
                     </div>
 
-                    {/* Deal Value */}
-                    {lead.deal_value && lead.deal_value > 0 && (
-                      <div className="flex items-center gap-1.5 mt-3">
-                        <div className="flex items-center gap-1 px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-md">
-                          <DollarSign className="h-3.5 w-3.5" />
-                          <span className="text-sm font-semibold">
+                    {/* Footer: deal value + owner */}
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
+                      {lead.deal_value && lead.deal_value > 0 ? (
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded">
+                          <DollarSign className="h-3 w-3" />
+                          <span className="text-xs font-semibold">
                             {formatCardCurrency(lead.deal_value)}
                           </span>
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">Sem valor</span>
+                      )}
 
-                    {lead.cadence_day && (
-                      <Badge variant="outline" className="mt-2 text-xs bg-primary/5 border-primary/20 text-primary">
-                        Dia {lead.cadence_day} da cadência
+                      {owner ? (
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Avatar className="h-6 w-6 border border-border">
+                                <AvatarImage src={owner.avatar_url || undefined} />
+                                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                                  {(owner.full_name || '?').charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {ownerRole}: {owner.full_name || 'Sem nome'}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground italic">Sem dono</span>
+                      )}
+                    </div>
+
+                    {lead.cadence_day && lead.cadence_day > 1 && (
+                      <Badge variant="outline" className="mt-2 text-[10px] h-4 px-1.5 bg-primary/5 border-primary/20 text-primary">
+                        Cadência D{lead.cadence_day}
                       </Badge>
                     )}
                   </div>
-                ))}
+                  );
+                })}
 
                 {stageLeads.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
