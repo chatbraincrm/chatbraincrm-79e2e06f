@@ -2178,7 +2178,7 @@ Deno.serve(async (req) => {
 
       if (groupingEnabled && groupingWindowMs > 0 && savedMessageCreatedAt) {
         const startedAt = Date.now();
-        const tickMs = 1000;
+        const tickMs = 500;
         let lastSeenAt = savedMessageCreatedAt;
         let lastSeenId = savedMessageId || "00000000-0000-0000-0000-000000000000";
         let deferred = false;
@@ -2748,8 +2748,8 @@ Deno.serve(async (req) => {
                   }
                   console.log("[evolution-webhook] whatsapp hard-cap: chunks reduced to", chunks.length);
                 }
-                // Clamp delays entre 800ms e 4000ms
-                betweenDelaysMs = betweenDelaysMs.map((n) => Math.min(4000, Math.max(800, Number(n) || 1200)));
+                // Clamp delays entre 400ms e 1500ms (era 800-4000ms)
+                betweenDelaysMs = betweenDelaysMs.map((n) => Math.min(1500, Math.max(400, Number(n) || 700)));
               }
 
               console.log("[evolution-webhook] bot_call: ok", JSON.stringify({
@@ -2759,9 +2759,9 @@ Deno.serve(async (req) => {
               }));
 
               // Initial human-like delay before the first bubble.
-              // HARD CAP: 15s — antes era 120s e estava fazendo IA demorar 1-2 min.
+              // HARD CAP: 4s (era 15s) — ainda parece humano sem deixar o cliente esperando.
               if (firstDelayMs > 0) {
-                await new Promise((r) => setTimeout(r, Math.min(firstDelayMs, 15_000)));
+                await new Promise((r) => setTimeout(r, Math.min(firstDelayMs, 4_000)));
               }
 
               // Toggle "Simular digitando..." do agente liga/desliga a Presence Engine real.
@@ -2795,11 +2795,12 @@ Deno.serve(async (req) => {
 
                 // 1) "digitando..." REAL no WhatsApp via Presence Engine
                 //    (POST /message/presence — Evolution Go, com heartbeat a cada 7s)
+                // typing realista mas curto: min 300ms, +12ms/char, cap 3s (era 600/25/8000)
                 const typingMs = Math.max(
-                  600,
+                  300,
                   Math.min(
-                    typingMsPerBubble[i] || (1500 + text.length * 25),
-                    8000,
+                    typingMsPerBubble[i] || (800 + text.length * 12),
+                    3000,
                   ),
                 );
                 const presenceEnabled = presenceEnabledOrg && agentTypingIndicator;
