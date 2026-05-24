@@ -24,6 +24,9 @@ export function AdminDashboard() {
   const { data: productDistribution } = useProductSalesDistribution();
   const { data: monthlyData } = useMonthlySalesEvolution(6);
   const { data: squadsPerformance } = useAllSquadsPerformance();
+  const { data: funnelData } = useLeadFunnel();
+  const { data: sourceData } = useLeadsBySource();
+  const { data: tempData } = useTemperatureDistribution();
 
   if (kpisLoading) {
     return (
