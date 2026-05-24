@@ -140,29 +140,43 @@ async function ensureVisitorAvatar(
       evoUrl = evoUrl || String((platformCfg as any)?.evolution_go_url || "").replace(/\/$/, "");
       apiKey = apiKey || (platformCfg as any)?.evolution_go_global_api_key;
     }
-    if (!evoUrl || !apiKey || !instance.name) return;
+    if (!evoUrl || !apiKey || !instance.name) {
+      console.log("[ensureVisitorAvatar] skip: missing config", {
+        hasUrl: !!evoUrl, hasKey: !!apiKey, hasName: !!instance.name,
+      });
+      return;
+    }
 
-    const picResp = await fetch(
-      `${evoUrl}/chat/fetchProfilePictureUrl/${encodeURIComponent(instance.name)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: apiKey },
-        body: JSON.stringify({ number: phone }),
-      },
-    );
-    if (!picResp.ok) return;
+    const cleanPhone = String(phone).replace(/\D+/g, "");
+    const endpoint = `${evoUrl}/chat/fetchProfilePictureUrl/${encodeURIComponent(instance.name)}`;
+    const picResp = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: apiKey },
+      body: JSON.stringify({ number: cleanPhone }),
+    });
+    if (!picResp.ok) {
+      const txt = await picResp.text().catch(() => "");
+      console.log("[ensureVisitorAvatar] http error", picResp.status, txt.slice(0, 200));
+      return;
+    }
     const picJson = await picResp.json().catch(() => null);
     const picUrl: string | undefined =
-      picJson?.profilePictureUrl || picJson?.profile_picture_url || picJson?.url;
+      picJson?.profilePictureUrl ||
+      picJson?.profile_picture_url ||
+      picJson?.url ||
+      picJson?.picture ||
+      picJson?.data?.profilePictureUrl;
     if (picUrl && /^https?:\/\//.test(picUrl)) {
       await supabase
         .from("webchat_conversations")
         .update({ visitor_avatar_url: picUrl })
         .eq("id", conversationId);
-      console.log("[evolution-webhook] saved visitor_avatar_url for", conversationId);
+      console.log("[ensureVisitorAvatar] ✅ saved avatar for", conversationId);
+    } else {
+      console.log("[ensureVisitorAvatar] no picture in response", JSON.stringify(picJson).slice(0, 200));
     }
   } catch (e) {
-    console.warn("[evolution-webhook] ensureVisitorAvatar failed (non-fatal):", e);
+    console.warn("[ensureVisitorAvatar] failed (non-fatal):", e);
   }
 }
 
