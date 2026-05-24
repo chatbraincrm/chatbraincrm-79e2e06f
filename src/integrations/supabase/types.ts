@@ -5044,6 +5044,59 @@ export type Database = {
           },
         ]
       }
+      lead_temperature_rules: {
+        Row: {
+          cold_threshold: number
+          created_at: string
+          engagement_full_at_messages: number
+          hot_threshold: number
+          id: string
+          organization_id: string
+          recency_cold_after_days: number
+          updated_at: string
+          weight_bant: number
+          weight_engagement: number
+          weight_recency: number
+          weight_stage: number
+        }
+        Insert: {
+          cold_threshold?: number
+          created_at?: string
+          engagement_full_at_messages?: number
+          hot_threshold?: number
+          id?: string
+          organization_id: string
+          recency_cold_after_days?: number
+          updated_at?: string
+          weight_bant?: number
+          weight_engagement?: number
+          weight_recency?: number
+          weight_stage?: number
+        }
+        Update: {
+          cold_threshold?: number
+          created_at?: string
+          engagement_full_at_messages?: number
+          hot_threshold?: number
+          id?: string
+          organization_id?: string
+          recency_cold_after_days?: number
+          updated_at?: string
+          weight_bant?: number
+          weight_engagement?: number
+          weight_recency?: number
+          weight_stage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_temperature_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_transfer_history: {
         Row: {
           created_at: string | null
@@ -5180,6 +5233,9 @@ export type Database = {
           source: string | null
           squad_id: string | null
           temperature: Database["public"]["Enums"]["lead_temperature"] | null
+          temperature_manual_override: boolean
+          temperature_score: number | null
+          temperature_updated_at: string | null
           transfer_reason: string | null
           transferred_at: string | null
           transferred_by: string | null
@@ -5225,6 +5281,9 @@ export type Database = {
           source?: string | null
           squad_id?: string | null
           temperature?: Database["public"]["Enums"]["lead_temperature"] | null
+          temperature_manual_override?: boolean
+          temperature_score?: number | null
+          temperature_updated_at?: string | null
           transfer_reason?: string | null
           transferred_at?: string | null
           transferred_by?: string | null
@@ -5270,6 +5329,9 @@ export type Database = {
           source?: string | null
           squad_id?: string | null
           temperature?: Database["public"]["Enums"]["lead_temperature"] | null
+          temperature_manual_override?: boolean
+          temperature_score?: number | null
+          temperature_updated_at?: string | null
           transfer_reason?: string | null
           transferred_at?: string | null
           transferred_by?: string | null
@@ -10387,6 +10449,13 @@ export type Database = {
         Returns: number
       }
       claim_first_super_admin: { Args: never; Returns: boolean }
+      compute_lead_temperature: {
+        Args: { _lead_id: string }
+        Returns: {
+          score: number
+          temperature: Database["public"]["Enums"]["lead_temperature"]
+        }[]
+      }
       create_product_tag_package: {
         Args: {
           p_organization_id: string
@@ -10614,6 +10683,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      recompute_org_temperatures: {
+        Args: { _organization_id: string }
+        Returns: number
       }
       record_variant_impression: {
         Args: { p_variant_id: string }
