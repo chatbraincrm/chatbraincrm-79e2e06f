@@ -1685,54 +1685,7 @@ Deno.serve(async (req) => {
         }));
 
         // Fire-and-forget: enrich with WhatsApp profile picture (best effort, non-blocking).
-        // Pulled from Evolution Go: GET /chat/findContacts or /chat/fetchProfilePictureUrl.
-        try {
-          const { data: cfg } = await supabase
-            .from("integration_settings")
-            .select("settings")
-            .eq("organization_id", instance.organization_id)
-            .eq("integration_type", "whatsapp_provider")
-            .maybeSingle();
-          const settings = (cfg as any)?.settings || {};
-          let evoUrl = String(settings.evolution_go_url || "").replace(/\/$/, "");
-          let apiKey: string | undefined =
-            instance.instance_token || settings.evolution_go_global_api_key;
-          if (!evoUrl || !apiKey) {
-            const { data: platformCfg } = await supabase
-              .from("platform_settings")
-              .select("evolution_go_url, evolution_go_global_api_key")
-              .limit(1)
-              .maybeSingle();
-            evoUrl = evoUrl || String((platformCfg as any)?.evolution_go_url || "").replace(/\/$/, "");
-            apiKey = apiKey || (platformCfg as any)?.evolution_go_global_api_key;
-          }
-          if (evoUrl && apiKey && instance.name) {
-            const picResp = await fetch(
-              `${evoUrl}/chat/fetchProfilePictureUrl/${encodeURIComponent(instance.name)}`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json", apikey: apiKey },
-                body: JSON.stringify({ number: phone }),
-              },
-            );
-            if (picResp.ok) {
-              const picJson = await picResp.json().catch(() => null);
-              const picUrl: string | undefined =
-                picJson?.profilePictureUrl || picJson?.profile_picture_url || picJson?.url;
-              if (picUrl && /^https?:\/\//.test(picUrl)) {
-                await supabase
-                  .from("webchat_conversations")
-                  .update({ visitor_avatar_url: picUrl })
-                  .eq("id", conversationId);
-                console.log("[evolution-webhook] saved visitor_avatar_url for", conversationId);
-              }
-            } else {
-              console.log("[evolution-webhook] profile pic lookup status", picResp.status);
-            }
-          }
-        } catch (picErr) {
-          console.warn("[evolution-webhook] profile pic lookup failed (non-fatal):", picErr);
-        }
+        ensureVisitorAvatar(supabase, instance, conversationId, phone).catch(() => {});
 
         // Safety net: fecha qualquer outra conversa aberta do mesmo telefone normalizado
         const { error: closeErr } = await supabase
