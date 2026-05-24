@@ -148,12 +148,46 @@ export function LeadHeader({ lead, onBack, onTransfer, onEdit, onDelete, onWhats
         {/* Lead info */}
         <div className="flex flex-col md:flex-row md:items-start gap-4">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              {getTemperatureIcon()}
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              {getTemperatureIcon(lead.temperature)}
               <h1 className="text-lg md:text-2xl font-bold text-foreground">{lead.name}</h1>
-              <Badge variant="outline" className="text-xs">
-                {getTemperatureLabel()}
-              </Badge>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className="text-xs cursor-pointer hover:bg-accent gap-1.5"
+                  >
+                    {getTemperatureLabel()}
+                    {lead.temperature_manual_override && <Lock className="h-3 w-3" />}
+                    {typeof lead.temperature_score === 'number' && !lead.temperature_manual_override && (
+                      <span className="text-muted-foreground font-mono">· {lead.temperature_score}</span>
+                    )}
+                  </Badge>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuLabel className="text-xs">Definir temperatura</DropdownMenuLabel>
+                  <DropdownMenuItem disabled={savingTemp} onClick={() => setManualTemperature('hot')}>
+                    <Flame className="h-4 w-4 mr-2 text-red-500" />
+                    Quente
+                    {lead.temperature_manual_override && lead.temperature === 'hot' && <Check className="h-3 w-3 ml-auto" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled={savingTemp} onClick={() => setManualTemperature('warm')}>
+                    <Thermometer className="h-4 w-4 mr-2 text-amber-500" />
+                    Morno
+                    {lead.temperature_manual_override && lead.temperature === 'warm' && <Check className="h-3 w-3 ml-auto" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled={savingTemp} onClick={() => setManualTemperature('cold')}>
+                    <Snowflake className="h-4 w-4 mr-2 text-blue-500" />
+                    Frio
+                    {lead.temperature_manual_override && lead.temperature === 'cold' && <Check className="h-3 w-3 ml-auto" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem disabled={savingTemp || !lead.temperature_manual_override} onClick={() => setManualTemperature('auto')}>
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Automático (calculado)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             
             {(lead.position || lead.company) && (
