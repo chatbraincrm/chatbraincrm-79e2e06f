@@ -2758,8 +2758,10 @@ Deno.serve(async (req) => {
                 });
                 await new Promise((r) => setTimeout(r, typingMs));
 
-                // 2) Envia o balão
+                // 2) Envia o balão — registra o hash ANTES do envio para
+                // que o eco fromMe do Evolution já encontre o dedupe pronto.
                 let externalId: string | null = null;
+                await recordSentResponse(supabase, conversationId, text);
                 try {
                   const sendRes = await sendEvo({
                     organization_id: instance.organization_id,
@@ -2770,9 +2772,6 @@ Deno.serve(async (req) => {
                   });
                   const sendBody = await sendRes.text();
                   console.log("[evolution-webhook] bot_send chunk", i + 1, "/", chunks.length, "status:", sendRes.status, "body:", sendBody.slice(0, 200));
-                  if (sendRes.ok) {
-                    await recordSentResponse(supabase, conversationId, text);
-                  }
                   try {
                     const parsed = JSON.parse(sendBody);
                     externalId =
