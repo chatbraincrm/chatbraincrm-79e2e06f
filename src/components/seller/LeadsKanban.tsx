@@ -119,6 +119,17 @@ export function LeadsKanban({ productId, productName, organizationId, onWhatsApp
     }
   };
 
+  const getChannelIcon = (channel: string | null | undefined) => {
+    const c = (channel || '').toLowerCase();
+    if (c.includes('whatsapp')) return <MessageCircle size={10} className="text-green-500" />;
+    if (c.includes('instagram')) return <Instagram size={10} className="text-pink-500" />;
+    if (c.includes('facebook') || c.includes('messenger')) return <Facebook size={10} className="text-blue-500" />;
+    if (c.includes('email') || c.includes('mail')) return <Mail size={10} className="text-muted-foreground" />;
+    if (c.includes('phone') || c.includes('voice')) return <Phone size={10} className="text-muted-foreground" />;
+    if (c) return <Globe size={10} className="text-muted-foreground" />;
+    return null;
+  };
+
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
     setDraggedLeadId(leadId);
     e.dataTransfer.effectAllowed = 'move';
