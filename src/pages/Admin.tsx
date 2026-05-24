@@ -66,6 +66,7 @@ const BusinessHoursManager = lazyWithRetry(f.BusinessHoursManager);
 const CompanySettings = lazyWithRetry(f.CompanySettings);
 const SupportTickets = lazyWithRetry(f.SupportTickets);
 const QuickRepliesManager = lazyWithRetry(f.QuickRepliesManager);
+const LeadTemperatureRulesManager = lazyWithRetry(f.LeadTemperatureRulesManager);
 
 /**
  * Mapa: id da seção → factory de import. Usado pelo prefetch on-hover
