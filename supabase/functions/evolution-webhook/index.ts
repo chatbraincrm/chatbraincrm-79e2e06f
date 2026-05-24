@@ -913,6 +913,50 @@ Deno.serve(async (req) => {
     const rawInstance = extractInstance(payload);
     console.log("[evolution-webhook] raw event:", rawEvent, "instance:", rawInstance || "<MISSING>");
 
+    // 🔬 AVATAR PROBE: deep-scan payload for any key that smells like a profile picture URL.
+    // Goal: discover which Evolution Go event (if any) carries the contact's avatar.
+    try {
+      const KEY_RE = /(pic|avatar|profile|photo|imgurl|imageurl|thumb)/i;
+      const hits: Array<{ path: string; value: string }> = [];
+      const seen = new WeakSet<object>();
+      const walk = (node: any, path: string) => {
+        if (!node || typeof node !== "object") return;
+        if (seen.has(node)) return;
+        seen.add(node);
+        if (Array.isArray(node)) {
+          node.slice(0, 5).forEach((v, i) => walk(v, `${path}[${i}]`));
+          return;
+        }
+        for (const [k, v] of Object.entries(node)) {
+          const p = path ? `${path}.${k}` : k;
+          if (typeof v === "string") {
+            if (KEY_RE.test(k) && v.length > 0 && v.length < 500) {
+              hits.push({ path: p, value: v.slice(0, 200) });
+            }
+          } else if (v && typeof v === "object") {
+            walk(v, p);
+          }
+        }
+      };
+      walk(payload, "");
+      if (hits.length > 0) {
+        console.log(
+          `[avatar-probe] event=${rawEvent} hits=${hits.length} payload=`,
+          JSON.stringify(hits).slice(0, 1500),
+        );
+      } else if (
+        rawEvent && !["Message", "HistorySync", "QRCode", "QRTimeout", "Connection"].includes(String(rawEvent))
+      ) {
+        // For rare events, also dump a small payload snippet to help spot avatar fields we missed.
+        console.log(
+          `[avatar-probe] event=${rawEvent} no_hits, sample=`,
+          JSON.stringify(payload).slice(0, 800),
+        );
+      }
+    } catch (e) {
+      console.warn("[avatar-probe] failed:", e);
+    }
+
     const norm = normalizePayload(payload);
     if (!norm) {
       // Log full payload (truncated) so we can identify where the instance name lives
