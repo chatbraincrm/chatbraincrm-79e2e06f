@@ -246,17 +246,26 @@ export default function Admin() {
     );
   }
 
+  const isInbox = activeSection === 'inbox';
   return (
-    <div className="min-h-screen bg-background flex w-full">
+    <div className="h-screen bg-background flex w-full overflow-hidden">
       <AdminSidebar
         activeSection={activeSection}
         onSectionChange={handleSectionChange}
       />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
         <OnboardingBanner />
-        <div className="p-6">
-          {renderContent()}
-        </div>
+        {isInbox ? (
+          <div className="flex-1 min-h-0 p-6 pt-4 overflow-hidden">
+            {renderContent()}
+          </div>
+        ) : (
+          <div className="flex-1 min-h-0 overflow-auto">
+            <div className="p-6">
+              {renderContent()}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

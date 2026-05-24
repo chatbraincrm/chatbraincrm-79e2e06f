@@ -8,16 +8,20 @@ export function InboxManager() {
   const [activeTab, setActiveTab] = useState('inbox');
 
   return (
-    <div className="space-y-4">
-      <div>
+    <div className="h-full flex flex-col min-h-0">
+      <div className="flex-shrink-0 mb-3">
         <h1 className="text-2xl font-bold">Atendimentos</h1>
         <p className="text-sm text-muted-foreground">
           Central de conversas do chat do site
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex-1 min-h-0 flex flex-col"
+      >
+        <TabsList className="flex-shrink-0 grid w-full grid-cols-2 lg:w-auto lg:inline-grid mb-3">
           <TabsTrigger value="inbox" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
             <span>Inbox</span>
@@ -28,11 +32,11 @@ export function InboxManager() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="inbox" className="space-y-4">
+        <TabsContent value="inbox" className="flex-1 min-h-0 overflow-hidden mt-0">
           <WebChatInbox />
         </TabsContent>
 
-        <TabsContent value="reports" className="space-y-4">
+        <TabsContent value="reports" className="flex-1 min-h-0 overflow-auto mt-0">
           <WebChatReportsTab />
         </TabsContent>
       </Tabs>
