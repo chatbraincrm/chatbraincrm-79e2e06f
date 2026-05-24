@@ -1314,6 +1314,8 @@ Deno.serve(async (req) => {
 
       if (existing) {
         conversationId = existing.id;
+        // Lazy avatar fetch para conversas antigas sem foto.
+        ensureVisitorAvatar(supabase, instance, conversationId, phone).catch(() => {});
 
         // Read current_agent_id + agent_type + orchestrator state to decide whether
         // we can/should reassign an instance-bound agent here.
