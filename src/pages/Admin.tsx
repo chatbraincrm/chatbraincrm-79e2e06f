@@ -37,6 +37,7 @@ const f = {
   CompanySettings: () => import('@/components/admin/company/CompanySettings').then(m => ({ default: m.CompanySettings })),
   SupportTickets: () => import('@/components/admin/support/SupportTickets').then(m => ({ default: m.SupportTickets })),
   QuickRepliesManager: () => import('@/components/admin/QuickRepliesManager').then(m => ({ default: m.QuickRepliesManager })),
+  LeadTemperatureRulesManager: () => import('@/components/admin/leads/LeadTemperatureRulesManager').then(m => ({ default: m.LeadTemperatureRulesManager })),
 };
 
 // Lazy components (com retry + cache compartilhado para prefetch).
@@ -65,6 +66,7 @@ const BusinessHoursManager = lazyWithRetry(f.BusinessHoursManager);
 const CompanySettings = lazyWithRetry(f.CompanySettings);
 const SupportTickets = lazyWithRetry(f.SupportTickets);
 const QuickRepliesManager = lazyWithRetry(f.QuickRepliesManager);
+const LeadTemperatureRulesManager = lazyWithRetry(f.LeadTemperatureRulesManager);
 
 /**
  * Mapa: id da seção → factory de import. Usado pelo prefetch on-hover
@@ -95,6 +97,7 @@ const sectionFactories: Record<string, () => Promise<unknown>> = {
   company: f.CompanySettings,
   support: f.SupportTickets,
   'quick-replies': f.QuickRepliesManager,
+  'lead-temperature': f.LeadTemperatureRulesManager,
 };
 
 export function prefetchAdminSection(id: string) {
@@ -200,6 +203,7 @@ export default function Admin() {
       case 'company': return <CompanySettings />;
       case 'support': return <SupportTickets scope="admin" />;
       case 'quick-replies': return <QuickRepliesManager />;
+      case 'lead-temperature': return <LeadTemperatureRulesManager />;
       default: return <AdminDashboard />;
     }
   };

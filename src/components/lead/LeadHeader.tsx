@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Mail, Phone, MessageCircle, MoreVertical, Flame, Snowflake, Thermometer, Building2, MapPin, User, Pencil, RefreshCw, Sparkles } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MessageCircle, MoreVertical, Flame, Snowflake, Thermometer, Building2, MapPin, User, Pencil, RefreshCw, Sparkles, Lock, Wand2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,10 +7,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CallWithAIDialog } from './CallWithAIDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface LeadHeaderProps {
   lead: {
@@ -22,6 +26,8 @@ interface LeadHeaderProps {
     position?: string | null;
     product_id?: string | null;
     temperature?: 'hot' | 'warm' | 'cold' | null;
+    temperature_manual_override?: boolean | null;
+    temperature_score?: number | null;
     assigned_to?: string | null;
     assignee?: {
       full_name: string;
@@ -42,8 +48,12 @@ interface LeadHeaderProps {
 
 export function LeadHeader({ lead, onBack, onTransfer, onEdit, onDelete, onWhatsApp, isAdmin }: LeadHeaderProps) {
   const [callAIOpen, setCallAIOpen] = useState(false);
-  const getTemperatureIcon = () => {
-    switch (lead.temperature) {
+  const [savingTemp, setSavingTemp] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const getTemperatureIcon = (temp?: string | null) => {
+    switch (temp) {
       case 'hot':
         return <Flame className="h-5 w-5 text-red-500" />;
       case 'warm':
@@ -61,6 +71,35 @@ export function LeadHeader({ lead, onBack, onTransfer, onEdit, onDelete, onWhats
       case 'warm': return 'Morno';
       case 'cold': return 'Frio';
       default: return 'Não definido';
+    }
+  };
+
+  const setManualTemperature = async (value: 'hot' | 'warm' | 'cold' | 'auto') => {
+    setSavingTemp(true);
+    try {
+      if (value === 'auto') {
+        const { error } = await supabase
+          .from('leads')
+          .update({ temperature_manual_override: false })
+          .eq('id', lead.id);
+        if (error) throw error;
+        // Trigger recompute by calling RPC
+        await supabase.rpc('compute_lead_temperature', { _lead_id: lead.id });
+        toast({ title: 'Temperatura automática', description: 'O sistema voltará a calcular automaticamente.' });
+      } else {
+        const { error } = await supabase
+          .from('leads')
+          .update({ temperature: value, temperature_manual_override: true })
+          .eq('id', lead.id);
+        if (error) throw error;
+        toast({ title: 'Temperatura fixada', description: `Lead marcado manualmente como ${value === 'hot' ? 'quente' : value === 'warm' ? 'morno' : 'frio'}.` });
+      }
+      queryClient.invalidateQueries({ queryKey: ['lead', lead.id] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } finally {
+      setSavingTemp(false);
     }
   };
 
@@ -109,12 +148,46 @@ export function LeadHeader({ lead, onBack, onTransfer, onEdit, onDelete, onWhats
         {/* Lead info */}
         <div className="flex flex-col md:flex-row md:items-start gap-4">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              {getTemperatureIcon()}
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              {getTemperatureIcon(lead.temperature)}
               <h1 className="text-lg md:text-2xl font-bold text-foreground">{lead.name}</h1>
-              <Badge variant="outline" className="text-xs">
-                {getTemperatureLabel()}
-              </Badge>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className="text-xs cursor-pointer hover:bg-accent gap-1.5"
+                  >
+                    {getTemperatureLabel()}
+                    {lead.temperature_manual_override && <Lock className="h-3 w-3" />}
+                    {typeof lead.temperature_score === 'number' && !lead.temperature_manual_override && (
+                      <span className="text-muted-foreground font-mono">· {lead.temperature_score}</span>
+                    )}
+                  </Badge>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuLabel className="text-xs">Definir temperatura</DropdownMenuLabel>
+                  <DropdownMenuItem disabled={savingTemp} onClick={() => setManualTemperature('hot')}>
+                    <Flame className="h-4 w-4 mr-2 text-red-500" />
+                    Quente
+                    {lead.temperature_manual_override && lead.temperature === 'hot' && <Check className="h-3 w-3 ml-auto" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled={savingTemp} onClick={() => setManualTemperature('warm')}>
+                    <Thermometer className="h-4 w-4 mr-2 text-amber-500" />
+                    Morno
+                    {lead.temperature_manual_override && lead.temperature === 'warm' && <Check className="h-3 w-3 ml-auto" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled={savingTemp} onClick={() => setManualTemperature('cold')}>
+                    <Snowflake className="h-4 w-4 mr-2 text-blue-500" />
+                    Frio
+                    {lead.temperature_manual_override && lead.temperature === 'cold' && <Check className="h-3 w-3 ml-auto" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem disabled={savingTemp || !lead.temperature_manual_override} onClick={() => setManualTemperature('auto')}>
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Automático (calculado)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             
             {(lead.position || lead.company) && (
