@@ -2147,13 +2147,13 @@ Deno.serve(async (req) => {
       // ============================================================
       // BUFFER CURTO (humanização sem queimar tempo)
       // ============================================================
-      // Lê configurações de humanização da org. Janela padrão = 3s.
-      // Teto absoluto = 8s desde a 1ª msg do burst — nunca mais que isso.
-      // Loop: dorme em fatias de 1s; se chegou nova msg do visitor, deferimos
-      // para a invocação dessa nova msg (que vai re-medir o teto).
+      // Lê configurações de humanização da org. Janela padrão = 1.5s (era 3s).
+      // Teto absoluto = 5s desde a 1ª msg do burst (era 8s) — nunca mais que isso.
+      // Loop: dorme em fatias de 500ms (era 1s); se chegou nova msg do visitor,
+      // deferimos para a invocação dessa nova msg (que vai re-medir o teto).
       let groupingEnabled = true;
-      let groupingWindowMs = 3000;
-      let groupingMaxMs = 8000;
+      let groupingWindowMs = 1500;
+      let groupingMaxMs = 5000;
       let presenceEnabledOrg = true;
       try {
         const { data: orgRow } = await supabase
@@ -2178,7 +2178,7 @@ Deno.serve(async (req) => {
 
       if (groupingEnabled && groupingWindowMs > 0 && savedMessageCreatedAt) {
         const startedAt = Date.now();
-        const tickMs = 1000;
+        const tickMs = 500;
         let lastSeenAt = savedMessageCreatedAt;
         let lastSeenId = savedMessageId || "00000000-0000-0000-0000-000000000000";
         let deferred = false;
@@ -2748,8 +2748,8 @@ Deno.serve(async (req) => {
                   }
                   console.log("[evolution-webhook] whatsapp hard-cap: chunks reduced to", chunks.length);
                 }
-                // Clamp delays entre 800ms e 4000ms
-                betweenDelaysMs = betweenDelaysMs.map((n) => Math.min(4000, Math.max(800, Number(n) || 1200)));
+                // Clamp delays entre 400ms e 1500ms (era 800-4000ms)
+                betweenDelaysMs = betweenDelaysMs.map((n) => Math.min(1500, Math.max(400, Number(n) || 700)));
               }
 
               console.log("[evolution-webhook] bot_call: ok", JSON.stringify({
@@ -2759,9 +2759,9 @@ Deno.serve(async (req) => {
               }));
 
               // Initial human-like delay before the first bubble.
-              // HARD CAP: 15s — antes era 120s e estava fazendo IA demorar 1-2 min.
+              // HARD CAP: 4s (era 15s) — ainda parece humano sem deixar o cliente esperando.
               if (firstDelayMs > 0) {
-                await new Promise((r) => setTimeout(r, Math.min(firstDelayMs, 15_000)));
+                await new Promise((r) => setTimeout(r, Math.min(firstDelayMs, 4_000)));
               }
 
               // Toggle "Simular digitando..." do agente liga/desliga a Presence Engine real.
@@ -2795,11 +2795,12 @@ Deno.serve(async (req) => {
 
                 // 1) "digitando..." REAL no WhatsApp via Presence Engine
                 //    (POST /message/presence — Evolution Go, com heartbeat a cada 7s)
+                // typing realista mas curto: min 300ms, +12ms/char, cap 3s (era 600/25/8000)
                 const typingMs = Math.max(
-                  600,
+                  300,
                   Math.min(
-                    typingMsPerBubble[i] || (1500 + text.length * 25),
-                    8000,
+                    typingMsPerBubble[i] || (800 + text.length * 12),
+                    3000,
                   ),
                 );
                 const presenceEnabled = presenceEnabledOrg && agentTypingIndicator;
