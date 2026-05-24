@@ -1134,6 +1134,7 @@ Deno.serve(async (req) => {
           }
 
           if (!convOut?.id) {
+            const autoProductId = await resolveSingleProductId(supabase, instance.organization_id);
             const { data: newLead, error: newLeadErr } = await supabase
               .from("leads")
               .insert({
@@ -1141,6 +1142,7 @@ Deno.serve(async (req) => {
                 name: norm.pushName || targetPhone,
                 phone: targetPhone,
                 source: "whatsapp",
+                ...(autoProductId ? { product_id: autoProductId } : {}),
               })
               .select("id")
               .single();
