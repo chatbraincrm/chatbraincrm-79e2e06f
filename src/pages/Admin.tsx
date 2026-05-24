@@ -97,6 +97,7 @@ const sectionFactories: Record<string, () => Promise<unknown>> = {
   company: f.CompanySettings,
   support: f.SupportTickets,
   'quick-replies': f.QuickRepliesManager,
+  'lead-temperature': f.LeadTemperatureRulesManager,
 };
 
 export function prefetchAdminSection(id: string) {
