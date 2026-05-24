@@ -48,8 +48,12 @@ interface LeadHeaderProps {
 
 export function LeadHeader({ lead, onBack, onTransfer, onEdit, onDelete, onWhatsApp, isAdmin }: LeadHeaderProps) {
   const [callAIOpen, setCallAIOpen] = useState(false);
-  const getTemperatureIcon = () => {
-    switch (lead.temperature) {
+  const [savingTemp, setSavingTemp] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const getTemperatureIcon = (temp?: string | null) => {
+    switch (temp) {
       case 'hot':
         return <Flame className="h-5 w-5 text-red-500" />;
       case 'warm':
@@ -67,6 +71,35 @@ export function LeadHeader({ lead, onBack, onTransfer, onEdit, onDelete, onWhats
       case 'warm': return 'Morno';
       case 'cold': return 'Frio';
       default: return 'Não definido';
+    }
+  };
+
+  const setManualTemperature = async (value: 'hot' | 'warm' | 'cold' | 'auto') => {
+    setSavingTemp(true);
+    try {
+      if (value === 'auto') {
+        const { error } = await supabase
+          .from('leads')
+          .update({ temperature_manual_override: false })
+          .eq('id', lead.id);
+        if (error) throw error;
+        // Trigger recompute by calling RPC
+        await supabase.rpc('compute_lead_temperature', { _lead_id: lead.id });
+        toast({ title: 'Temperatura automática', description: 'O sistema voltará a calcular automaticamente.' });
+      } else {
+        const { error } = await supabase
+          .from('leads')
+          .update({ temperature: value, temperature_manual_override: true })
+          .eq('id', lead.id);
+        if (error) throw error;
+        toast({ title: 'Temperatura fixada', description: `Lead marcado manualmente como ${value === 'hot' ? 'quente' : value === 'warm' ? 'morno' : 'frio'}.` });
+      }
+      queryClient.invalidateQueries({ queryKey: ['lead', lead.id] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } finally {
+      setSavingTemp(false);
     }
   };
 
