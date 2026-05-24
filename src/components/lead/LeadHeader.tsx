@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Mail, Phone, MessageCircle, MoreVertical, Flame, Snowflake, Thermometer, Building2, MapPin, User, Pencil, RefreshCw, Sparkles } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MessageCircle, MoreVertical, Flame, Snowflake, Thermometer, Building2, MapPin, User, Pencil, RefreshCw, Sparkles, Lock, Wand2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,10 +7,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CallWithAIDialog } from './CallWithAIDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface LeadHeaderProps {
   lead: {
