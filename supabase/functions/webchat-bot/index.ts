@@ -4469,14 +4469,53 @@ REGRAS DE USO:
             tpl.replace(/\{\{\s*(\w+)\s*\}\}/g, (_m, k) => vars[k] ?? '').replace(/\s{2,}/g, ' ').trim();
 
           if (target === 'humano') {
-            // Escalate to human queue
-            await supabase
+            // Escalate to human queue.
+            // CRITICAL: precisa setar status='waiting_human' (não basta needs_human=true),
+            // pois o webchat-inbox filtra a fila por status. Também garantimos um sector_id
+            // para que o aceite manual funcione (regra: aceite exige sector_id).
+            const handoffUpdate: Record<string, unknown> = {
+              needs_human: true,
+              current_agent_id: null,
+              assigned_user_id: null,
+              status: 'waiting_human',
+              updated_at: new Date().toISOString(),
+            };
+
+            // Garante sector_id: se a conversa não tiver, usa o primeiro setor ativo da org.
+            try {
+              const { data: convSector } = await supabase
+                .from('webchat_conversations')
+                .select('sector_id, organization_id')
+                .eq('id', body.conversation_id)
+                .maybeSingle();
+              if (!convSector?.sector_id && convSector?.organization_id) {
+                const { data: fallbackSector } = await supabase
+                  .from('sectors')
+                  .select('id')
+                  .eq('organization_id', convSector.organization_id)
+                  .eq('is_active', true)
+                  .order('bot_order', { ascending: true, nullsFirst: false })
+                  .order('created_at', { ascending: true })
+                  .limit(1)
+                  .maybeSingle();
+                if (fallbackSector?.id) {
+                  handoffUpdate.sector_id = fallbackSector.id;
+                  console.log('[webchat-bot] 🏷️ handoff humano: sector_id fallback →', fallbackSector.id);
+                }
+              }
+            } catch (sectorErr) {
+              console.warn('[webchat-bot] handoff sector resolution failed (non-fatal):', sectorErr);
+            }
+
+            const { error: handoffUpdateErr } = await supabase
               .from('webchat_conversations')
-              .update({
-                needs_human: true,
-                current_agent_id: null,
-              })
+              .update(handoffUpdate)
               .eq('id', body.conversation_id);
+            if (handoffUpdateErr) {
+              console.error('[webchat-bot] ❌ handoff humano update failed:', handoffUpdateErr);
+            } else {
+              console.log('[webchat-bot] ✅ handoff humano: status=waiting_human, agente removido');
+            }
 
             // Replace AI reply with the configured outgoing message OR default farewell
             const outTpl = ((activeAgent as any).handoff_outgoing_message || '').trim() || DEFAULT_HANDOFF_OUTGOING;
