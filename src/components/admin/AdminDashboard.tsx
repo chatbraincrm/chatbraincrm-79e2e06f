@@ -2,9 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { useAdminKPIs, useTopSellers, useProductSalesDistribution, useMonthlySalesEvolution } from '@/hooks/useAdminDashboard';
+import { useAdminKPIs, useTopSellers, useProductSalesDistribution, useMonthlySalesEvolution, useLeadFunnel, useLeadsBySource, useTemperatureDistribution } from '@/hooks/useAdminDashboard';
 import { useAllSquadsPerformance } from '@/hooks/useSquadPerformance';
-import { TrendingUp, TrendingDown, DollarSign, Target, Users, ShoppingCart, Award, Loader2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Target, Users, ShoppingCart, Award, Loader2, Flame, Filter } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const formatCurrency = (value: number) => {
@@ -24,6 +24,9 @@ export function AdminDashboard() {
   const { data: productDistribution } = useProductSalesDistribution();
   const { data: monthlyData } = useMonthlySalesEvolution(6);
   const { data: squadsPerformance } = useAllSquadsPerformance();
+  const { data: funnelData } = useLeadFunnel();
+  const { data: sourceData } = useLeadsBySource();
+  const { data: tempData } = useTemperatureDistribution();
 
   if (kpisLoading) {
     return (
@@ -196,6 +199,111 @@ export function AdminDashboard() {
                       borderRadius: '8px'
                     }}
                     formatter={(value: number) => [formatCurrency(value), 'Vendas']}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Lead Insights Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Funnel Conversion */}
+        <Card className="gradient-card border-border">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Filter className="h-5 w-5 text-primary" />
+              Conversão do Funil
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!funnelData || funnelData.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8 text-sm">Sem dados de pipeline</p>
+            ) : (
+              <div className="space-y-3">
+                {funnelData.map((stage) => (
+                  <div key={stage.stageId}>
+                    <div className="flex items-center justify-between mb-1 text-sm">
+                      <span className="font-medium text-foreground truncate">{stage.stageName}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {stage.leadCount} · {stage.conversionRate.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${Math.max(stage.conversionRate, 2)}%`,
+                          backgroundColor: stage.color,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Lead Sources */}
+        <Card className="gradient-card border-border">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Leads por Origem (mês)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!sourceData || sourceData.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8 text-sm">Sem leads neste mês</p>
+            ) : (
+              <div className="space-y-2">
+                {sourceData.map((s, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-secondary/40 border border-border/50">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate capitalize">{s.source}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{s.channel}</p>
+                    </div>
+                    <Badge variant="outline" className="font-semibold">{s.count}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Temperature Distribution */}
+        <Card className="gradient-card border-border">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Flame className="h-5 w-5 text-destructive" />
+              Temperatura dos Leads
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={tempData}
+                    dataKey="count"
+                    nameKey="label"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label={({ label, count }) => `${label}: ${count}`}
+                  >
+                    {tempData?.map((entry, idx) => (
+                      <Cell key={idx} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
