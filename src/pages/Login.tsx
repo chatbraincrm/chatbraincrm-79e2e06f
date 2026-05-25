@@ -27,8 +27,8 @@ export default function Login() {
   // Guard de sessionStorage evita request repetida em recargas da mesma sessão.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (sessionStorage.getItem('vendus_bootstrap_attempted') === '1') return;
-    sessionStorage.setItem('vendus_bootstrap_attempted', '1');
+    if (sessionStorage.getItem('chatbrain_bootstrap_attempted') === '1') return;
+    sessionStorage.setItem('chatbrain_bootstrap_attempted', '1');
     supabase.functions.invoke('ensure-default-super-admin').catch(() => {
       // silencioso — não atrapalha login
     });

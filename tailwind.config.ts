@@ -14,10 +14,15 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Outfit', 'Inter', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
-        'vendus-gradient': 'linear-gradient(135deg, #3F6212, #84CC16, #BEF264)',
+        /* Gradiente principal ChatBrain: azul meia noite → índigo → violeta */
+        'chatbrain-gradient': 'linear-gradient(135deg, #0B0F1F, #111B5E, #7C3AED)',
+        /* Gradiente de botão: azul tecnológico → violeta */
+        'btn-gradient': 'linear-gradient(135deg, #3B82F6, #7C3AED)',
+        /* Gradiente ciano */
+        'cyan-gradient': 'linear-gradient(135deg, #3B82F6, #00D4FF)',
       },
       colors: {
         border: "hsl(var(--border))",
@@ -61,6 +66,19 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        /* Tokens de identidade ChatBrain */
+        ai: {
+          DEFAULT: "hsl(var(--ai))",
+          foreground: "hsl(var(--ai-foreground))",
+        },
+        cyan: {
+          DEFAULT: "hsl(var(--cyan))",
+          foreground: "hsl(var(--cyan-foreground))",
+        },
+        violet: {
+          DEFAULT: "hsl(var(--violet))",
+          foreground: "hsl(var(--violet-foreground))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -71,11 +89,31 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        /* Cores fixas da paleta (para uso pontual) */
+        brand: {
+          midnight: "#0B0F1F",
+          indigo: "#111B5E",
+          blue: "#3B82F6",
+          cyan: "#00D4FF",
+          violet: "#7C3AED",
+          light: "#F5F7FA",
+          muted: "#94A3B8",
+          border: "#1E293B",
+          card: "#10172A",
+          secondary: "#111827",
+        },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "var(--radius)",               /* 20px */
+        md: "calc(var(--radius) - 4px)",   /* 16px */
+        sm: "calc(var(--radius) - 8px)",   /* 12px */
+        xl: "calc(var(--radius) + 4px)",   /* 24px */
+        "2xl": "calc(var(--radius) + 8px)", /* 28px */
+      },
+      boxShadow: {
+        glow: "var(--shadow-glow)",
+        "glow-violet": "var(--shadow-glow-violet, var(--shadow-glow))",
+        "glow-cyan": "var(--shadow-glow-cyan, var(--shadow-glow))",
       },
       keyframes: {
         "accordion-down": {

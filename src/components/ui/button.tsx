@@ -9,14 +9,20 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "gradient-primary text-primary-foreground shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98]",
+        /* Primário: gradiente azul → violeta (identidade ChatBrain) */
+        default: "btn-gradient text-white font-semibold shadow-md hover:shadow-lg hover:shadow-primary/30 active:scale-[0.98]",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-border bg-transparent hover:bg-secondary hover:border-primary/50",
+        /* Secundário: fundo escuro com borda — ideal para ações alternativas */
+        outline: "border border-border bg-transparent text-foreground hover:bg-secondary hover:border-primary/60 hover:text-primary",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-secondary hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        glow: "gradient-primary text-primary-foreground shadow-glow hover:shadow-lg animate-pulse-glow",
+        /* Glow: botão com brilho azul pulsante */
+        glow: "btn-gradient text-white font-semibold shadow-glow hover:shadow-lg animate-pulse-glow",
+        /* Soft: fundo tênue com texto primário */
         soft: "bg-primary/10 text-primary hover:bg-primary/20",
+        /* AI/Violet: destaque violeta para ações de IA */
+        ai: "bg-gradient-to-r from-violet to-accent text-white font-semibold shadow-md hover:shadow-glow-violet active:scale-[0.98]",
       },
       size: {
         default: "h-10 px-4 py-2",

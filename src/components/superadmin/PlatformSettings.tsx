@@ -36,14 +36,14 @@ export function PlatformSettings() {
     logo_dark_url: '',
     favicon_url: '',
     // colors
-    primary_color: '#84CC16',
-    accent_color: '#84CC16',
-    gradient_style: 'vendus' as GradientStyle,
+    primary_color: '#3B82F6',
+    accent_color: '#7C3AED',
+    gradient_style: 'tech' as GradientStyle,
     gradient_custom: null as { start: string; mid: string; end: string } | null,
-    border_radius: 12,
+    border_radius: 20,
     default_theme: 'dark',
     // typography
-    font_family: 'Inter',
+    font_family: 'Outfit',
     font_url: '',
     base_font_size: 16,
     // login
@@ -77,13 +77,13 @@ export function PlatformSettings() {
         logo_url: s.logo_url || '',
         logo_dark_url: s.logo_dark_url || '',
         favicon_url: s.favicon_url || '',
-        primary_color: s.primary_color || '#84CC16',
-        accent_color: s.accent_color || s.primary_color || '#84CC16',
-        gradient_style: s.gradient_style || 'vendus',
+        primary_color: s.primary_color || '#3B82F6',
+        accent_color: s.accent_color || s.primary_color || '#7C3AED',
+        gradient_style: s.gradient_style || 'tech',
         gradient_custom: s.gradient_custom || null,
-        border_radius: s.border_radius ?? 12,
+        border_radius: s.border_radius ?? 20,
         default_theme: s.default_theme || 'dark',
-        font_family: s.font_family || 'Inter',
+        font_family: s.font_family || 'Outfit',
         font_url: s.font_url || '',
         base_font_size: s.base_font_size ?? 16,
         login_headline: s.login_headline || '',
@@ -212,7 +212,7 @@ export function PlatformSettings() {
                   <Input
                     value={formData.platform_name}
                     onChange={(e) => update({ platform_name: e.target.value })}
-                    placeholder="Ex: Vendus"
+                    placeholder="Ex: ChatBrain CRM"
                   />
                 </div>
                 <div className="space-y-2">
@@ -297,14 +297,14 @@ export function PlatformSettings() {
                     value={formData.primary_color}
                     onChange={(v) => update({ primary_color: v })}
                     description="Cor principal — botões, links, ícones ativos"
-                    defaultValue="#84CC16"
+                    defaultValue="#3B82F6"
                   />
                   <ColorPickerField
                     label="Cor de Destaque"
                     value={formData.accent_color}
                     onChange={(v) => update({ accent_color: v })}
-                    description="Realces e badges (pode ser igual à primária)"
-                    defaultValue="#84CC16"
+                    description="Realces e badges de IA, destaques premium"
+                    defaultValue="#7C3AED"
                   />
                 </div>
 
@@ -563,7 +563,7 @@ export function PlatformSettings() {
                 <Input
                   value={formData.powered_by_text}
                   onChange={(e) => update({ powered_by_text: e.target.value })}
-                  placeholder="Powered by Vendus"
+                  placeholder="Powered by ChatBrain CRM"
                 />
                 <p className="text-xs text-muted-foreground">
                   Deixe vazio para ocultar completamente
@@ -610,7 +610,7 @@ export function PlatformSettings() {
                   <Input
                     value={formData.browser_title}
                     onChange={(e) => update({ browser_title: e.target.value })}
-                    placeholder="Vendus — Plataforma de vendas"
+                    placeholder="ChatBrain CRM — Plataforma de vendas"
                   />
                   <p className="text-xs text-muted-foreground">
                     Se vazio, usa o nome da plataforma
@@ -634,7 +634,7 @@ export function PlatformSettings() {
                   <Input
                     value={formData.twitter_handle}
                     onChange={(e) => update({ twitter_handle: e.target.value })}
-                    placeholder="@vendus"
+                    placeholder="@chatbraincrm"
                   />
                 </div>
                 <div className="space-y-2">

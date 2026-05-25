@@ -1,5 +1,5 @@
 // =====================================================
-// VENDUS CAPTURE: Tipos TypeScript para Funis de Leads
+// CHATBRAIN CRM: Tipos TypeScript para Funis de Leads
 // STRATEGY FLOW BUILDER v2
 // =====================================================
 

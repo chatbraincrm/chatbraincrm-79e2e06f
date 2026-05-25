@@ -117,15 +117,15 @@ export function Sidebar({
               onFocus={() => prefetchIndexTab(item.id)}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-                "text-sidebar-foreground hover:bg-sidebar-accent",
-                isActive && "bg-primary/10 text-primary"
+                "text-sidebar-foreground hover:bg-sidebar-accent/60",
+                isActive && "bg-sidebar-accent text-sidebar-primary font-semibold"
               )}
             >
-              <Icon size={20} className={cn(isActive && "text-primary")} />
+              <Icon size={20} className={cn(isActive ? "text-sidebar-primary" : "text-sidebar-foreground/70")} />
               {!collapsed && (
                 <span className={cn(
                   "text-sm font-medium",
-                  isActive && "text-primary"
+                  isActive && "text-sidebar-primary"
                 )}>
                   {item.label}
                 </span>

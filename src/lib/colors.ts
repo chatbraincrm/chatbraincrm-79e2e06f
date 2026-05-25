@@ -111,7 +111,7 @@ export function generateColorScale(hex: string): ColorScale | null {
   };
 }
 
-export type GradientStyle = 'solid' | 'soft' | 'vendus' | 'custom';
+export type GradientStyle = 'solid' | 'soft' | 'tech' | 'rich' | 'custom';
 
 export function buildGradient(
   scale: ColorScale,
@@ -124,6 +124,17 @@ export function buildGradient(
   if (style === 'soft') {
     return `linear-gradient(135deg, hsl(${scale.baseStr}), hsl(${scale.lighterStr}))`;
   }
+  if (style === 'rich' || (style as string) === 'vendus') {
+    return `linear-gradient(135deg, hsl(${scale.darkerStr}), hsl(${scale.baseStr}), hsl(${scale.lighterStr}))`;
+  }
+  if (style === 'tech') {
+    // Tech: midnight → primary color → violet accent (#7C3AED)
+    const violet = hexToHsl('#7C3AED');
+    const midnight = hexToHsl('#0B0F1F');
+    if (violet && midnight) {
+      return `linear-gradient(135deg, hsl(${hslToString(midnight)}), hsl(${scale.baseStr}), hsl(${hslToString(violet)}))`;
+    }
+  }
   if (style === 'custom' && custom) {
     const s = hexToHsl(custom.start);
     const m = hexToHsl(custom.mid);
@@ -132,6 +143,6 @@ export function buildGradient(
       return `linear-gradient(135deg, hsl(${hslToString(s)}), hsl(${hslToString(m)}), hsl(${hslToString(e)}))`;
     }
   }
-  // 'vendus' style (default) — 3 stop rich gradient
+  // 'rich' (default) — 3 stop gradient: dark → base → light
   return `linear-gradient(135deg, hsl(${scale.darkerStr}), hsl(${scale.baseStr}), hsl(${scale.lighterStr}))`;
 }

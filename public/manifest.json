@@ -1,12 +1,12 @@
 {
-  "name": "Vendus",
-  "short_name": "Vendus",
-  "description": "Vendus — Plataforma de vendas com IA",
+  "name": "ChatBrain CRM",
+  "short_name": "ChatBrain",
+  "description": "CRM com IA para vendas, atendimento e automação",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0a0d14",
-  "theme_color": "#84CC16",
+  "background_color": "#0B0F1F",
+  "theme_color": "#3B82F6",
   "icons": [
     {
       "src": "/icons/icon-72x72.png",

@@ -14,7 +14,8 @@ interface GradientPickerProps {
 const STYLES: { value: GradientStyle; label: string; description: string }[] = [
   { value: 'solid', label: 'Sólido', description: 'Sem gradiente, cor única' },
   { value: 'soft', label: 'Suave', description: '2 paradas — cor → claro' },
-  { value: 'vendus', label: 'Rico', description: '3 paradas — escuro → cor → claro' },
+  { value: 'tech', label: 'Tech', description: '3 paradas — escuro → primária → destaque' },
+  { value: 'rich', label: 'Rico', description: '3 paradas — escuro → cor → claro' },
   { value: 'custom', label: 'Custom', description: 'Escolha 3 cores manualmente' },
 ];
 
@@ -27,9 +28,9 @@ export function GradientPicker({
 }: GradientPickerProps) {
   const scale = generateColorScale(primaryColor);
   const safeCustom = custom || {
-    start: '#3F6212',
-    mid: primaryColor || '#84CC16',
-    end: '#BEF264',
+    start: '#0B0F1F',
+    mid: primaryColor || '#3B82F6',
+    end: '#7C3AED',
   };
 
   return (

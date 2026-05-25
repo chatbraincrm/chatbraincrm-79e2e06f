@@ -1,128 +1,170 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  /* TEMA LIGHT - Elegante e Premium */
+  /* ─────────────────────────────────────────────────────────────
+     TEMA LIGHT  —  ChatBrain CRM (modo claro de suporte)
+     Paleta: azul tecnológico primário, fundo quase-branco frio
+  ───────────────────────────────────────────────────────────── */
   :root {
-    --background: 0 0% 99%;
-    --foreground: 222 47% 11%;
+    --background: 220 30% 98%;
+    --foreground: 228 48% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 228 48% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 228 48% 12%;
 
-    --primary: 83 81% 44%;
+    --primary: 217 91% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 215 33% 93%;
+    --secondary-foreground: 228 48% 12%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 8% 46%;
+    --muted: 215 33% 91%;
+    --muted-foreground: 215 20% 48%;
 
-    --accent: 83 81% 44%;
+    --accent: 262 83% 56%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 40%;
+    --success: 142 71% 38%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 48%;
+    --warning-foreground: 228 48% 12%;
+
+    --border: 215 33% 88%;
+    --input: 215 33% 91%;
+    --ring: 217 91% 55%;
+
+    --radius: 1.25rem;
+
+    /* Sidebar Light */
+    --sidebar-background: 220 30% 97%;
+    --sidebar-foreground: 228 48% 25%;
+    --sidebar-primary: 217 91% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 33% 91%;
+    --sidebar-accent-foreground: 228 48% 12%;
+    --sidebar-border: 215 33% 88%;
+    --sidebar-ring: 217 91% 55%;
+
+    /* Tokens extras */
+    --ai: 262 83% 56%;
+    --ai-foreground: 0 0% 100%;
+    --cyan: 190 100% 50%;
+    --cyan-foreground: 228 48% 8%;
+    --violet: 262 83% 56%;
+    --violet-foreground: 0 0% 100%;
+
+    /* ChatBrain Gradients - Light */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 55%), hsl(262 83% 56%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 30% 97%));
+    --gradient-hero: linear-gradient(135deg, hsl(217 91% 55% / 0.07), hsl(262 83% 56% / 0.04));
+    --gradient-accent: linear-gradient(135deg, hsl(217 91% 55% / 0.10), hsl(190 100% 50% / 0.04));
+
+    /* Sombras Light */
+    --shadow-sm: 0 1px 2px 0 hsl(228 48% 12% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(228 48% 12% / 0.07), 0 2px 4px -2px hsl(228 48% 12% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(228 48% 12% / 0.09), 0 4px 6px -4px hsl(228 48% 12% / 0.05);
+    --shadow-glow: 0 0 20px hsl(217 91% 55% / 0.22);
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     TEMA DARK  —  ChatBrain CRM (experiência principal da marca)
+     #0B0F1F · #111B5E · #3B82F6 · #00D4FF · #7C3AED
+  ───────────────────────────────────────────────────────────── */
+  .dark {
+    /* Fundo principal: #0B0F1F = azul meia noite */
+    --background: 228 48% 8%;
+    /* Texto claro: #F5F7FA */
+    --foreground: 215 33% 97%;
+
+    /* Cards: #10172A */
+    --card: 224 45% 11%;
+    --card-foreground: 215 33% 97%;
+
+    /* Popover ligeiramente mais claro */
+    --popover: 224 45% 13%;
+    --popover-foreground: 215 33% 97%;
+
+    /* Primária: #3B82F6 — azul tecnológico */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secundária: #1E293B */
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 215 33% 97%;
+
+    /* Muted */
+    --muted: 221 39% 13%;
+    /* Texto secundário: #94A3B8 */
+    --muted-foreground: 215 20% 65%;
+
+    /* Accent: #7C3AED — violeta */
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 222 47% 11%;
+    --warning-foreground: 228 48% 8%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 83 81% 44%;
-
-    --radius: 0.75rem;
-
-    /* Sidebar Light */
-    --sidebar-background: 220 14% 98%;
-    --sidebar-foreground: 222 47% 20%;
-    --sidebar-primary: 83 81% 44%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 94%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 83 81% 44%;
-
-    /* Vendus Gradients - Verde escuro → Lime → Verde claro */
-    --gradient-primary: linear-gradient(135deg, hsl(83 90% 25%), hsl(83 81% 44%), hsl(83 90% 70%));
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 14% 98%));
-    --gradient-hero: linear-gradient(135deg, hsl(83 90% 70% / 0.08), hsl(83 81% 44% / 0.04));
-    --gradient-accent: linear-gradient(135deg, hsl(83 81% 44% / 0.10), hsl(83 90% 70% / 0.04));
-
-    /* Sombras Light - Suaves e naturais */
-    --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.04);
-    --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.06), 0 2px 4px -2px hsl(222 47% 11% / 0.04);
-    --shadow-lg: 0 10px 15px -3px hsl(222 47% 11% / 0.08), 0 4px 6px -4px hsl(222 47% 11% / 0.04);
-    --shadow-glow: 0 0 20px hsl(83 81% 44% / 0.20);
-  }
-
-  /* TEMA DARK - Premium */
-  .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
-
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 10%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 83 75% 50%;
-    --primary-foreground: 222 47% 6%;
-
-    --secondary: 222 30% 14%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 222 30% 12%;
-    --muted-foreground: 215 20% 55%;
-
-    --accent: 83 75% 50%;
-    --accent-foreground: 222 47% 6%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
-
-    --success: 142 71% 45%;
-    --success-foreground: 222 47% 6%;
-
-    --warning: 38 92% 50%;
-    --warning-foreground: 222 47% 6%;
-
-    --border: 222 30% 18%;
-    --input: 222 30% 14%;
-    --ring: 83 75% 50%;
+    /* Borda: #1E293B */
+    --border: 217 32% 17%;
+    /* Input: fundo escuro #0B1220ish */
+    --input: 224 45% 9%;
+    /* Ring focus: azul primário */
+    --ring: 217 91% 60%;
 
     /* Sidebar Dark */
-    --sidebar-background: 222 47% 5%;
-    --sidebar-foreground: 210 40% 85%;
-    --sidebar-primary: 83 75% 50%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 222 30% 12%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 30% 15%;
-    --sidebar-ring: 83 75% 50%;
+    /* Fundo sidebar: ligeiramente mais escuro que o background */
+    --sidebar-background: 228 48% 6%;
+    /* Texto inativo: #94A3B8 */
+    --sidebar-foreground: 215 20% 65%;
+    /* Ícone ativo: #00D4FF */
+    --sidebar-primary: 190 100% 50%;
+    --sidebar-primary-foreground: 228 48% 8%;
+    /* Item ativo: #111B5E */
+    --sidebar-accent: 232 69% 18%;
+    --sidebar-accent-foreground: 215 33% 97%;
+    --sidebar-border: 217 32% 14%;
+    --sidebar-ring: 217 91% 60%;
 
-    /* Vendus Gradients - Dark */
-    --gradient-primary: linear-gradient(135deg, hsl(83 90% 25%), hsl(83 75% 50%), hsl(83 90% 70%));
-    --gradient-card: linear-gradient(180deg, hsl(222 47% 10%), hsl(222 47% 8%));
-    --gradient-hero: linear-gradient(135deg, hsl(222 47% 8%), hsl(222 47% 4%));
-    --gradient-accent: linear-gradient(135deg, hsl(83 75% 50% / 0.18), hsl(83 90% 70% / 0.06));
+    /* Tokens extras */
+    --ai: 262 83% 58%;
+    --ai-foreground: 0 0% 100%;
+    --cyan: 190 100% 50%;
+    --cyan-foreground: 228 48% 8%;
+    --violet: 262 83% 58%;
+    --violet-foreground: 0 0% 100%;
+
+    /* ChatBrain Gradients - Dark (#0B0F1F → #111B5E → #7C3AED) */
+    --gradient-primary: linear-gradient(135deg, hsl(228 48% 8%), hsl(232 69% 22%), hsl(262 83% 58%));
+    --gradient-button: linear-gradient(135deg, hsl(217 91% 60%), hsl(262 83% 58%));
+    --gradient-card: linear-gradient(180deg, hsl(224 45% 12%), hsl(224 45% 10%));
+    --gradient-hero: linear-gradient(135deg, hsl(228 48% 8%), hsl(228 48% 5%));
+    --gradient-accent: linear-gradient(135deg, hsl(217 91% 60% / 0.15), hsl(262 83% 58% / 0.08));
 
     /* Shadows - Dark */
-    --shadow-sm: 0 1px 2px 0 hsl(222 47% 4% / 0.3);
-    --shadow-md: 0 4px 6px -1px hsl(222 47% 4% / 0.4), 0 2px 4px -2px hsl(222 47% 4% / 0.3);
-    --shadow-lg: 0 10px 15px -3px hsl(222 47% 4% / 0.5), 0 4px 6px -4px hsl(222 47% 4% / 0.4);
-    --shadow-glow: 0 0 20px hsl(83 75% 50% / 0.35);
+    --shadow-sm: 0 1px 2px 0 hsl(228 48% 4% / 0.35);
+    --shadow-md: 0 4px 6px -1px hsl(228 48% 4% / 0.45), 0 2px 4px -2px hsl(228 48% 4% / 0.35);
+    --shadow-lg: 0 10px 15px -3px hsl(228 48% 4% / 0.55), 0 4px 6px -4px hsl(228 48% 4% / 0.45);
+    /* Glow com azul primário */
+    --shadow-glow: 0 0 20px hsl(217 91% 60% / 0.30);
+    --shadow-glow-violet: 0 0 20px hsl(262 83% 58% / 0.30);
+    --shadow-glow-cyan: 0 0 20px hsl(190 100% 50% / 0.25);
   }
 }
 
@@ -132,7 +174,8 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Outfit', Inter, system-ui, sans-serif;
+    font-size: 16px;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -147,7 +190,7 @@
     font-size: 16px !important;
   }
 
-  /* Custom scrollbar - adapts to theme */
+  /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -197,6 +240,10 @@
     background: var(--gradient-primary);
   }
 
+  .gradient-button {
+    background: var(--gradient-button, var(--gradient-primary));
+  }
+
   .gradient-card {
     background: var(--gradient-card);
   }
@@ -213,9 +260,28 @@
     box-shadow: var(--shadow-glow);
   }
 
+  .shadow-glow-violet {
+    box-shadow: var(--shadow-glow-violet, var(--shadow-glow));
+  }
+
+  .shadow-glow-cyan {
+    box-shadow: var(--shadow-glow-cyan, var(--shadow-glow));
+  }
+
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background: var(--gradient-primary);
+    background: var(--gradient-button, var(--gradient-primary));
+  }
+
+  /* Botão primário com gradiente azul → violeta */
+  .btn-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    transition: filter 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .btn-gradient:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 4px 20px hsl(var(--primary) / 0.4), 0 2px 8px hsl(var(--accent) / 0.25);
   }
 
   /* Press effect for touch interactions */
@@ -267,40 +333,40 @@
   }
 
   @keyframes slideUp {
-    from { 
+    from {
       opacity: 0;
       transform: translateY(10px);
     }
-    to { 
+    to {
       opacity: 1;
       transform: translateY(0);
     }
   }
 
   @keyframes slideDown {
-    from { 
+    from {
       opacity: 0;
       transform: translateY(-10px);
     }
-    to { 
+    to {
       opacity: 1;
       transform: translateY(0);
     }
   }
 
   @keyframes scaleIn {
-    from { 
+    from {
       opacity: 0;
       transform: scale(0.95);
     }
-    to { 
+    to {
       opacity: 1;
       transform: scale(1);
     }
   }
 
   @keyframes bounceIn {
-    0% { 
+    0% {
       opacity: 0;
       transform: scale(0.3);
     }
@@ -310,7 +376,7 @@
     70% {
       transform: scale(0.9);
     }
-    100% { 
+    100% {
       opacity: 1;
       transform: scale(1);
     }
@@ -329,10 +395,10 @@
 
   @keyframes pulse-glow {
     0%, 100% {
-      box-shadow: var(--shadow-glow);
+      box-shadow: 0 0 20px hsl(217 91% 60% / 0.30);
     }
     50% {
-      box-shadow: 0 0 30px hsl(83 75% 50% / 0.45);
+      box-shadow: 0 0 36px hsl(217 91% 60% / 0.50), 0 0 12px hsl(262 83% 58% / 0.30);
     }
   }
 
@@ -369,7 +435,7 @@
   .stagger-4 { animation-delay: 0.2s; }
   .stagger-5 { animation-delay: 0.25s; }
 
-  /* Temperature-based gradients for leads - adapts to theme */
+  /* Temperature-based gradients for leads */
   .temperature-hot {
     background: linear-gradient(135deg, hsl(0 72% 51% / 0.1), transparent);
     border-left: 3px solid hsl(0 72% 51%);
@@ -381,11 +447,11 @@
   }
 
   .temperature-cold {
-    background: linear-gradient(135deg, hsl(210 80% 50% / 0.1), transparent);
-    border-left: 3px solid hsl(210 80% 50%);
+    background: linear-gradient(135deg, hsl(217 91% 60% / 0.1), transparent);
+    border-left: 3px solid hsl(217 91% 60%);
   }
 
-  /* Glass effect - adapts to theme */
+  /* Glass effect */
   .glass {
     @apply bg-background/80 backdrop-blur-md;
   }
