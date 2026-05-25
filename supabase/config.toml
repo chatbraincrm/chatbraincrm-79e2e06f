@@ -1,4 +1,9 @@
 project_id = "pywezxvophssmdafjhqi"
 
+# O auth-email-hook recebe JWT assinado pelo Supabase Auth com SEND_EMAIL_HOOK_SECRET,
+# não com o JWT padrão do projeto. A verificação é feita manualmente dentro da função.
+[functions.auth-email-hook]
+verify_jwt = false
+
 [functions.process-email-queue]
 verify_jwt = true
