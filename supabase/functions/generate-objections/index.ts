@@ -91,7 +91,7 @@ CATEGORIAS:
     const { response, config } = await aiChat({
       organizationId,
       capability: 'content_generation',
-      model: 'google/gemini-3-flash-preview',
+      model: 'gpt-5-mini',
       label: 'generate-objections',
       supabase,
       body: {

@@ -33,7 +33,7 @@ async function llmFallback(
     description?: string;
   }>,
 ): Promise<{ specialist_id: string; reason: string } | null> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey || specialists.length === 0) return null;
 
   const conversationSnippet = (context.recent_messages ?? [])
@@ -68,7 +68,7 @@ ${
 
   try {
     const resp = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
         headers: {
@@ -76,7 +76,7 @@ ${
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "gpt-5-mini",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },

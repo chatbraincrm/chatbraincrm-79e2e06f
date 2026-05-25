@@ -1,46 +1,36 @@
 // High-level AI call helper that automatically uses the org's routing config
-// (OpenAI direct or Lovable Gateway) and applies fallback when allowed.
-// Drop-in replacement for raw fetch() to ai.gateway.lovable.dev/v1/chat/completions.
+// (org key or platform OpenAI key) and applies fallback when allowed.
 
 import { resolveAIConfig, logAIConfig, prepareAIRequestBody, ResolvedAIConfig, AICapability } from './ai-router.ts';
 
-const LOVABLE_GATEWAY = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+const OPENAI_CHAT_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const DEFAULT_MODEL = 'gpt-5-mini';
 
 export interface AICallOptions {
   organizationId?: string | null;
   capability?: AICapability | string;
-  /** Original Lovable-style model the caller wants. Will be adapted if provider is OpenAI. */
   model?: string;
-  /** Body fields beyond model+messages (tools, response_format, temperature, stream, etc.) */
   body: Record<string, any>;
-  /** Optional label for logs */
   label?: string;
-  /** If true, returns the Response without throwing on !ok (caller handles streaming etc) */
   returnRaw?: boolean;
-  /** Supabase client to read routing/credentials. If omitted, uses Lovable directly. */
   supabase?: any;
 }
 
-async function lovableFallbackResponse(model: string, body: Record<string, any>) {
-  const lovableKey = Deno.env.get('LOVABLE_API_KEY') ?? '';
-  return await fetch(LOVABLE_GATEWAY, {
+async function platformFallbackResponse(model: string, body: Record<string, any>) {
+  const openaiKey = Deno.env.get('OPENAI_API_KEY') ?? '';
+  return await fetch(OPENAI_CHAT_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${lovableKey}`,
+      Authorization: `Bearer ${openaiKey}`,
     },
-    body: JSON.stringify({ ...body, model }),
+    body: JSON.stringify({ ...body, model: model || DEFAULT_MODEL }),
   });
 }
 
 /**
  * Performs an AI chat completion respecting the org routing config.
  * Returns the Response. Caller is responsible for parsing JSON / handling stream.
- *
- * Behavior:
- *  - If routing → openai with valid key: calls OpenAI directly with adapted model.
- *  - If openai call fails (not 429/401) and fallback_to_lovable=true: retries on Lovable.
- *  - If routing → lovable: calls Lovable Gateway.
  */
 export async function aiChat(opts: AICallOptions): Promise<{
   response: Response;
@@ -53,15 +43,15 @@ export async function aiChat(opts: AICallOptions): Promise<{
   if (supabase && organizationId) {
     cfg = await resolveAIConfig(supabase, organizationId, capability, model);
   } else {
-    const lovableKey = Deno.env.get('LOVABLE_API_KEY') ?? '';
+    const openaiKey = Deno.env.get('OPENAI_API_KEY') ?? '';
     cfg = {
-      endpoint: LOVABLE_GATEWAY,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${lovableKey}` },
-      model: model || 'google/gemini-3-flash-preview',
-      provider: 'lovable',
-      source: 'gateway',
+      endpoint: OPENAI_CHAT_ENDPOINT,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
+      model: model || DEFAULT_MODEL,
+      provider: 'openai',
+      source: 'platform_key',
       allowFallback: false,
-      apiKey: lovableKey,
+      apiKey: openaiKey,
     };
   }
 
@@ -74,9 +64,9 @@ export async function aiChat(opts: AICallOptions): Promise<{
   });
 
   let usedFallback = false;
-  if (!response.ok && cfg.provider !== 'lovable' && cfg.allowFallback && response.status !== 429) {
-    console.warn(`[${label ?? 'ai-call'}] ${cfg.provider} returned ${response.status}, falling back to Lovable AI`);
-    response = await lovableFallbackResponse(model || 'google/gemini-3-flash-preview', body);
+  if (!response.ok && cfg.allowFallback && response.status !== 429 && response.status !== 401) {
+    console.warn(`[${label ?? 'ai-call'}] ${cfg.provider} returned ${response.status}, falling back to platform OpenAI key`);
+    response = await platformFallbackResponse(model || DEFAULT_MODEL, body);
     usedFallback = true;
   }
 
@@ -88,12 +78,10 @@ export async function describeAIError(response: Response, providerLabel: string)
   const text = await response.text().catch(() => '');
   if (response.status === 429) return 'Limite de requisições excedido. Tente novamente em alguns segundos.';
   if (response.status === 402) {
-    return providerLabel === 'openai'
-      ? 'Sua conta OpenAI está sem créditos ou bloqueada. Verifique em platform.openai.com/billing.'
-      : 'Créditos de IA esgotados. Adicione créditos na sua conta Lovable.';
+    return 'Sua conta OpenAI está sem créditos ou bloqueada. Verifique em platform.openai.com/billing.';
   }
   if (response.status === 401 || response.status === 403) {
-    return `Chave do provedor "${providerLabel}" inválida ou sem permissão. Verifique em Integrações → IA.`;
+    return `Chave da OpenAI inválida ou sem permissão. Verifique em Integrações → IA.`;
   }
-  return `Erro do provedor ${providerLabel} (${response.status}): ${text.slice(0, 200) || response.statusText}`;
+  return `Erro da OpenAI (${response.status}): ${text.slice(0, 200) || response.statusText}`;
 }

@@ -1141,12 +1141,12 @@ async function executeAction(
     case 'ai_agent_outreach': {
       if (!existingLeadId) throw new Error('No lead for AI outreach');
 
-      const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-      if (!lovableApiKey) {
-        return { lead_id: existingLeadId, skipped: true, reason: 'LOVABLE_API_KEY not configured' };
+      const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+      if (!openaiApiKey) {
+        return { lead_id: existingLeadId, skipped: true, reason: 'OPENAI_API_KEY not configured' };
       }
 
-      // Removed duplicate lovableApiKey check - already checked above
+      // Removed duplicate openaiApiKey check - already checked above
 
       // 1. Get lead data
       const { data: lead } = await supabase
@@ -1254,14 +1254,14 @@ Valor do Deal: ${lead?.deal_value || 'Não definido'}
 ${formResponses ? `\nRespostas do Formulário:\n${formResponses}` : ''}`;
 
       // 6. Call AI to generate message
-      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${lovableApiKey}`,
+          'Authorization': `Bearer ${openaiApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
+          model: 'gpt-5-mini',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },

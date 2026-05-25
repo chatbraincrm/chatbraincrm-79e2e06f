@@ -54,14 +54,14 @@ async function generateSummary(
 
     if (!history.trim()) return "";
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "gpt-5-nano",
         messages: [
           {
             role: "system",
@@ -221,7 +221,7 @@ serve(async (req) => {
     // Summary (optional)
     let summary = body.summary || "";
     if (!summary && agent.handoff_include_summary !== false) {
-      const apiKey = Deno.env.get("LOVABLE_API_KEY");
+      const apiKey = Deno.env.get("OPENAI_API_KEY");
       if (apiKey) summary = await generateSummary(conv.id, supabase, apiKey);
     }
 

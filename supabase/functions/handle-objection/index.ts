@@ -102,7 +102,7 @@ FORMATO DE RESPOSTA:
     const { response, config } = await aiChat({
       organizationId,
       capability: 'sales_copilot',
-      model: 'google/gemini-3-flash-preview',
+      model: 'gpt-5-mini',
       label: 'handle-objection',
       supabase,
       body: {

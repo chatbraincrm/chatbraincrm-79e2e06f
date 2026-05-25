@@ -10,11 +10,11 @@ const corsHeaders = {
 };
 
 async function generateEmbedding(text: string): Promise<number[]> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) throw new Error("OPENAI_API_KEY missing");
 
   const resp = await fetch(
-    "https://ai.gateway.lovable.dev/v1/embeddings",
+    "https://api.openai.com/v1/embeddings",
     {
       method: "POST",
       headers: {
@@ -22,7 +22,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/text-embedding-3-small",
+        model: "text-embedding-3-small",
         input: text.slice(0, 8000),
       }),
     },
