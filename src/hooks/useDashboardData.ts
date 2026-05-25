@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { startOfMonth, endOfMonth, subMonths, format, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import { startOfMonth, endOfMonth, subMonths, format, startOfWeek, addDays, subDays } from 'date-fns';
 
 export function useDashboardData(productId: string, userId?: string) {
   const now = new Date();
@@ -22,6 +22,7 @@ export function useDashboardData(productId: string, userId?: string) {
           company,
           temperature,
           last_contact_at,
+          created_at,
           current_stage_id,
           pipeline_stages!leads_current_stage_id_fkey (
             id, name, color, order_index, is_won, is_lost
@@ -188,84 +189,134 @@ export function useDashboardData(productId: string, userId?: string) {
     };
   };
 
-  // Calculate trends (comparing to last month)
+  // Calculate trends — 100% dados reais, zero Math.random()
   const trends = () => {
     const deals = dealsQuery.data || [];
     const leads = leadsQuery.data || [];
-    
-    // Current month data
-    const currentMonthDeals = deals.filter(d => {
-      if (!d.closed_at) return false;
-      const date = new Date(d.closed_at);
-      return date >= currentMonthStart && date <= currentMonthEnd;
-    });
-    
-    // Use deals count as proxy for leads trend
-    const currentMonthLeadsCount = leads.length;
-    const lastMonthLeadsCount = Math.max(1, currentMonthLeadsCount - Math.floor(Math.random() * 10));
-    const lastMonthDealsValue = Math.max(1000, currentMonthDeals.reduce((sum, d) => sum + d.deal_value, 0) * 0.85);
-    
-    const leadsChange = currentMonthLeadsCount > 0 && lastMonthLeadsCount > 0
-      ? Math.round(((currentMonthLeadsCount - lastMonthLeadsCount) / lastMonthLeadsCount) * 100)
-      : 0;
-    
-    const currentValue = currentMonthDeals.reduce((sum, d) => sum + d.deal_value, 0);
-    const revenueChange = currentValue > 0 && lastMonthDealsValue > 0
-      ? Math.round(((currentValue - lastMonthDealsValue) / lastMonthDealsValue) * 100)
-      : 0;
+    const commissions = commissionsQuery.data || [];
 
-    return {
-      leadsChange,
-      conversionChange: Math.floor(Math.random() * 10) - 3, // Mock for now
-      revenueChange,
-      commissionsChange: Math.floor(Math.random() * 15) - 5, // Mock for now
+    // ── Leads: novos leads criados este mês vs mês anterior ──────────────────
+    const thisMonthLeads = leads.filter(l => {
+      const d = new Date((l as any).created_at);
+      return d >= currentMonthStart && d <= currentMonthEnd;
+    }).length;
+    const lastMonthLeads = leads.filter(l => {
+      const d = new Date((l as any).created_at);
+      return d >= lastMonthStart && d <= lastMonthEnd;
+    }).length;
+    const leadsChange = lastMonthLeads > 0
+      ? Math.round(((thisMonthLeads - lastMonthLeads) / lastMonthLeads) * 100)
+      : thisMonthLeads > 0 ? 100 : 0;
+
+    // ── Receita: valor de deals ganhos este mês vs mês anterior ──────────────
+    const inMonth = (dateStr: string | null, start: Date, end: Date) => {
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      return d >= start && d <= end;
     };
+    const thisMonthWon  = deals.filter(d => d.status === 'won' && inMonth(d.closed_at, currentMonthStart, currentMonthEnd));
+    const lastMonthWon  = deals.filter(d => d.status === 'won' && inMonth(d.closed_at, lastMonthStart, lastMonthEnd));
+    const thisRevenue   = thisMonthWon.reduce((s, d) => s + d.deal_value, 0);
+    const lastRevenue   = lastMonthWon.reduce((s, d) => s + d.deal_value, 0);
+    const revenueChange = lastRevenue > 0
+      ? Math.round(((thisRevenue - lastRevenue) / lastRevenue) * 100)
+      : thisRevenue > 0 ? 100 : 0;
+
+    // ── Conversão: taxa de deals ganhos/fechados este mês vs mês anterior ────
+    const thisMonthClosed = deals.filter(d => inMonth(d.closed_at, currentMonthStart, currentMonthEnd));
+    const lastMonthClosed = deals.filter(d => inMonth(d.closed_at, lastMonthStart, lastMonthEnd));
+    const thisConv  = thisMonthClosed.length > 0 ? (thisMonthWon.length / thisMonthClosed.length) * 100 : 0;
+    const lastConvWon = lastMonthClosed.filter(d => d.status === 'won').length;
+    const lastConv  = lastMonthClosed.length > 0 ? (lastConvWon / lastMonthClosed.length) * 100 : 0;
+    const conversionChange = lastConv > 0 ? Math.round(thisConv - lastConv) : 0;
+
+    // ── Comissões: total gerado este mês vs mês anterior ─────────────────────
+    const thisMonthComm = commissions
+      .filter(c => inMonth(c.created_at, currentMonthStart, currentMonthEnd))
+      .reduce((s, c) => s + c.amount, 0);
+    const lastMonthComm = commissions
+      .filter(c => inMonth(c.created_at, lastMonthStart, lastMonthEnd))
+      .reduce((s, c) => s + c.amount, 0);
+    const commissionsChange = lastMonthComm > 0
+      ? Math.round(((thisMonthComm - lastMonthComm) / lastMonthComm) * 100)
+      : thisMonthComm > 0 ? 100 : 0;
+
+    return { leadsChange, conversionChange, revenueChange, commissionsChange };
   };
 
   // Weekly data for chart
   const weeklyData = () => {
     const deals = dealsQuery.data || [];
     const data: { date: string; deals: number; value: number }[] = [];
-    
+
     for (let i = 0; i < 7; i++) {
       const date = addDays(weekStart, i);
       const dateStr = format(date, 'yyyy-MM-dd');
-      
+
       const dayDeals = deals.filter(d => {
         if (!d.closed_at) return false;
         return format(new Date(d.closed_at), 'yyyy-MM-dd') === dateStr && d.status === 'won';
       });
-      
+
       data.push({
         date: dateStr,
         deals: dayDeals.length,
         value: dayDeals.reduce((sum, d) => sum + d.deal_value, 0),
       });
     }
-    
+
     return data;
   };
 
-  // Generate sparkline data for stats
-  const generateSparklineData = (baseValue: number, trend: 'up' | 'down' | 'neutral' = 'neutral') => {
-    const data: number[] = [];
-    let value = baseValue * 0.7;
-    
-    for (let i = 0; i < 7; i++) {
-      const change = (Math.random() - 0.5) * (baseValue * 0.1);
-      const trendBias = trend === 'up' ? baseValue * 0.03 : trend === 'down' ? -baseValue * 0.03 : 0;
-      value = Math.max(1, value + change + trendBias);
-      data.push(Math.round(value));
-    }
-    
-    // Ensure last value is closer to current
-    data[6] = baseValue;
-    
-    return data;
+  // Sparklines — dados reais dos últimos 7 dias (sem Math.random)
+  const buildSparklines = () => {
+    const deals = dealsQuery.data || [];
+    const leads = leadsQuery.data || [];
+    const commissions = commissionsQuery.data || [];
+
+    const days7 = Array.from({ length: 7 }, (_, i) => {
+      const d = subDays(now, 6 - i);
+      return format(d, 'yyyy-MM-dd');
+    });
+
+    const sparkLeads = days7.map(day =>
+      leads.filter(l => format(new Date((l as any).created_at), 'yyyy-MM-dd') === day).length
+    );
+
+    const sparkRevenue = days7.map(day =>
+      deals
+        .filter(d => d.status === 'won' && d.closed_at && format(new Date(d.closed_at), 'yyyy-MM-dd') === day)
+        .reduce((s, d) => s + d.deal_value / 1000, 0)
+    );
+
+    const sparkCommissions = days7.map(day =>
+      commissions
+        .filter(c => c.created_at && format(new Date(c.created_at), 'yyyy-MM-dd') === day)
+        .reduce((s, c) => s + c.amount / 100, 0)
+    );
+
+    // Conversão: acumulado até cada dia (rolling 7d)
+    const sparkConversion = days7.map((_, idx) => {
+      const window = deals.filter(d => {
+        if (!d.closed_at) return false;
+        const dayIdx = days7.indexOf(format(new Date(d.closed_at), 'yyyy-MM-dd'));
+        return dayIdx >= 0 && dayIdx <= idx;
+      });
+      const won = window.filter(d => d.status === 'won').length;
+      return window.length > 0 ? Math.round((won / window.length) * 100) : 0;
+    });
+
+    return {
+      leads: sparkLeads,
+      revenue: sparkRevenue,
+      commissions: sparkCommissions,
+      conversion: sparkConversion,
+    };
   };
 
   const currentStats = stats();
   const currentTrends = trends();
+  const currentSparklines = buildSparklines();
 
   return {
     funnelData: funnelData(),
@@ -274,12 +325,7 @@ export function useDashboardData(productId: string, userId?: string) {
     stats: currentStats,
     trends: currentTrends,
     weeklyData: weeklyData(),
-    sparklineData: {
-      leads: generateSparklineData(currentStats.activeLeadsCount, currentTrends.leadsChange > 0 ? 'up' : 'down'),
-      conversion: generateSparklineData(currentStats.conversionRate, currentTrends.conversionChange > 0 ? 'up' : 'down'),
-      revenue: generateSparklineData(currentStats.wonDealsValue / 1000, currentTrends.revenueChange > 0 ? 'up' : 'down'),
-      commissions: generateSparklineData(currentStats.totalCommissions / 100, currentTrends.commissionsChange > 0 ? 'up' : 'down'),
-    },
+    sparklineData: currentSparklines,
     isLoading: leadsQuery.isLoading || stagesQuery.isLoading || commissionsQuery.isLoading || dealsQuery.isLoading,
   };
 }

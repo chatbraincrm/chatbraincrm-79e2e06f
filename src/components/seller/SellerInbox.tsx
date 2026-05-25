@@ -411,6 +411,18 @@ export function SellerInbox({ productId, pendingConversationId, onConversationSe
         replyToMessageId,
         media,
       });
+
+      // Sincroniza last_contact_at no lead vinculado para que o dashboard
+      // "Leads em Risco" reflita corretamente as interações feitas pelo inbox
+      if (linkedLead?.id) {
+        supabase
+          .from('leads')
+          .update({ last_contact_at: new Date().toISOString() })
+          .eq('id', linkedLead.id)
+          .then(() => {
+            queryClient.invalidateQueries({ queryKey: ['dashboard-leads'] });
+          });
+      }
     } catch (error) {
       toast({
         title: 'Erro ao enviar',

@@ -131,6 +131,50 @@ export function useCreateDeal() {
         console.error('Error calculating commission:', commissionError);
       }
 
+      // ── Atualizar meta ativa do vendedor (achieved_value e achieved_deals) ──
+      // Apenas para deals "won" — o único status suportado por ora
+      if (deal.status === 'won') {
+        const closedDate = deal.closed_at ? deal.closed_at.split('T')[0] : new Date().toISOString().split('T')[0];
+
+        const { data: activeGoals } = await supabase
+          .from('sales_goals')
+          .select('id, achieved_value, achieved_deals')
+          .eq('user_id', deal.seller_id)
+          .eq('is_active', true)
+          .lte('period_start', closedDate)
+          .gte('period_end', closedDate);
+
+        if (activeGoals && activeGoals.length > 0) {
+          for (const goal of activeGoals) {
+            await supabase
+              .from('sales_goals')
+              .update({
+                achieved_value: (goal.achieved_value || 0) + deal.deal_value,
+                achieved_deals: (goal.achieved_deals || 0) + 1,
+              })
+              .eq('id', goal.id);
+          }
+        }
+
+        // ── Mover lead para o estágio "Ganho" do produto ─────────────────────
+        if (deal.lead_id && deal.product_id) {
+          const { data: wonStage } = await supabase
+            .from('pipeline_stages')
+            .select('id')
+            .eq('product_id', deal.product_id)
+            .eq('is_won', true)
+            .limit(1)
+            .maybeSingle();
+
+          if (wonStage?.id) {
+            await supabase
+              .from('leads')
+              .update({ current_stage_id: wonStage.id })
+              .eq('id', deal.lead_id);
+          }
+        }
+      }
+
       return newDeal;
     },
     onSuccess: () => {
@@ -138,6 +182,10 @@ export function useCreateDeal() {
       queryClient.invalidateQueries({ queryKey: ['deals-summary'] });
       queryClient.invalidateQueries({ queryKey: ['commissions'] });
       queryClient.invalidateQueries({ queryKey: ['commissions-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['sales-goals'] });
+      queryClient.invalidateQueries({ queryKey: ['current-goal'] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-leads'] });
     }
   });
 }
