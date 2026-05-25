@@ -1,1 +1,5 @@
+# Redireciona o domínio raiz (landing page) para /vendas
+https://chatbraincrm.com.br/ /vendas 301
+
+# SPA fallback — serve index.html para todas as rotas
 /* /index.html 200
