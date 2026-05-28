@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { 
-  LayoutDashboard, 
-  Calendar, 
-  BookOpen, 
-  MessageSquareWarning, 
-  FolderOpen, 
-  Bot, 
+import {
+  LayoutDashboard,
+  Calendar,
+  BookOpen,
+  MessageSquareWarning,
+  FolderOpen,
+  Bot,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -19,7 +19,8 @@ import {
   DollarSign,
   Shield,
   MessageSquare,
-  CalendarCheck
+  CalendarCheck,
+  HelpCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/Logo';
@@ -192,6 +193,14 @@ export function Sidebar({
             {!collapsed && <span className="text-sm">Painel Admin</span>}
           </Link>
         )}
+        <Link
+          to="/ajuda"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+          title="Central de Ajuda"
+        >
+          <HelpCircle size={20} />
+          {!collapsed && <span className="text-sm">Central de Ajuda</span>}
+        </Link>
         <Link
           to="/configuracoes"
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"

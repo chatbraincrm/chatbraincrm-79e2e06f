@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   Settings,
   Shield,
+  BookOpen,
 } from 'lucide-react';
 import {
   fixedItems,
@@ -170,6 +171,23 @@ export function AdminSidebar({ activeSection, onSectionChange }: AdminSidebarPro
             </Accordion>
           </>
         )}
+
+        {/* Central de Ajuda — visível para todos os admins */}
+        <div className="py-2">
+          <Separator className="bg-sidebar-border" />
+        </div>
+        <NavLink to="/ajuda">
+          <button
+            title="Central de Ajuda"
+            className={cn(
+              'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-sidebar-foreground hover:bg-sidebar-accent',
+              collapsed && 'justify-center px-2'
+            )}
+          >
+            <BookOpen className="h-4 w-4 flex-shrink-0" />
+            {!collapsed && <span>Central de Ajuda</span>}
+          </button>
+        </NavLink>
 
         {isSuperAdmin && (
           <>
