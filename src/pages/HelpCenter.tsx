@@ -6,7 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, ArrowLeft, BookOpen, Sparkles, FileText } from 'lucide-react';
+import { Search, ArrowLeft, BookOpen, Sparkles, FileText, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import * as Icons from 'lucide-react';
 
 function CategoryIcon({ name, className }: { name?: string | null; className?: string }) {
@@ -17,6 +18,8 @@ function CategoryIcon({ name, className }: { name?: string | null; className?: s
 export default function HelpCenter() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
   const { data: rawCategories = [] } = useHelpCategories();
   const { data: articles = [] } = useHelpArticles({ published: true, search: search || undefined });
   const { data: isSuperAdmin = false } = useIsSuperAdmin();
@@ -38,11 +41,28 @@ export default function HelpCenter() {
     return map;
   }, [articles, allowedCategoryIds]);
 
+  // Categorias/artigos filtrados pela seleção ativa
+  const visibleCategories = useMemo(
+    () => selectedCategoryId ? categories.filter((c: any) => c.id === selectedCategoryId) : categories,
+    [categories, selectedCategoryId]
+  );
+
+  const handleCategoryClick = (categoryId: string) => {
+    // Toggle: clicando na mesma categoria remove o filtro
+    setSelectedCategoryId(prev => (prev === categoryId ? null : categoryId));
+    // Limpa a busca para não conflitar
+    if (search) setSearch('');
+  };
+
+  const selectedCategory = categories.find((c: any) => c.id === selectedCategoryId);
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-background/80 backdrop-blur sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <div className="flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-primary" />
             <h1 className="text-lg font-semibold">Central de Ajuda</h1>
@@ -58,26 +78,64 @@ export default function HelpCenter() {
       </header>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        <div className="rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border p-6 sm:p-8 text-center space-y-3">
-          <h2 className="text-2xl sm:text-3xl font-bold">Como podemos te ajudar?</h2>
-          <p className="text-muted-foreground">Tire suas dúvidas, aprenda novos recursos e descubra dicas.</p>
-          <div className="relative max-w-xl mx-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar artigo..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 h-11"
-            />
+        {/* Hero / busca — só aparece quando não há categoria selecionada */}
+        {!selectedCategoryId && (
+          <div className="rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border p-6 sm:p-8 text-center space-y-3">
+            <h2 className="text-2xl sm:text-3xl font-bold">Como podemos te ajudar?</h2>
+            <p className="text-muted-foreground">Tire suas dúvidas, aprenda novos recursos e descubra dicas.</p>
+            <div className="relative max-w-xl mx-auto">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar artigo..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 h-11"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        {!search && (
+        {/* Barra de categoria selecionada — substitui o hero quando uma categoria está ativa */}
+        {selectedCategoryId && selectedCategory && (
+          <div className="flex items-center gap-3 rounded-xl border bg-primary/5 px-5 py-4">
+            <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+              <CategoryIcon name={selectedCategory.icon} className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-semibold text-foreground">{selectedCategory.name}</h2>
+              <p className="text-xs text-muted-foreground">
+                {(grouped.get(selectedCategoryId)?.length || 0)} artigos
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
+              onClick={() => setSelectedCategoryId(null)}
+            >
+              <X className="h-3.5 w-3.5" />
+              Ver todas
+            </Button>
+          </div>
+        )}
+
+        {/* Grade de categorias — visível quando sem busca e sem filtro ativo */}
+        {!search && !selectedCategoryId && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            {categories.map(cat => (
-              <Card key={cat.id} className="hover:border-primary/40 hover:shadow-sm transition-all cursor-pointer">
+            {categories.map((cat: any) => (
+              <Card
+                key={cat.id}
+                onClick={() => handleCategoryClick(cat.id)}
+                className={cn(
+                  'hover:border-primary/50 hover:shadow-md transition-all cursor-pointer select-none',
+                  selectedCategoryId === cat.id && 'border-primary bg-primary/5 shadow-md'
+                )}
+              >
                 <CardContent className="p-4 text-center space-y-2">
-                  <div className="w-10 h-10 mx-auto rounded-lg bg-primary/10 flex items-center justify-center">
+                  <div className={cn(
+                    'w-10 h-10 mx-auto rounded-lg flex items-center justify-center transition-colors',
+                    selectedCategoryId === cat.id ? 'bg-primary/20' : 'bg-primary/10'
+                  )}>
                     <CategoryIcon name={cat.icon} className="h-5 w-5 text-primary" />
                   </div>
                   <div className="font-medium text-sm">{cat.name}</div>
@@ -90,19 +148,24 @@ export default function HelpCenter() {
           </div>
         )}
 
+        {/* Artigos agrupados por categoria */}
         <div className="space-y-6">
-          {categories.map(cat => {
+          {visibleCategories.map((cat: any) => {
             const items = grouped.get(cat.id) || [];
             if (items.length === 0) return null;
             return (
               <section key={cat.id} className="space-y-2">
-                <div className="flex items-center gap-2">
+                {/* Cabeçalho da seção — clicável para filtrar (quando todas as categorias estão visíveis) */}
+                <button
+                  onClick={() => handleCategoryClick(cat.id)}
+                  className="flex items-center gap-2 w-full text-left group"
+                >
                   <CategoryIcon name={cat.icon} className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">{cat.name}</h3>
+                  <h3 className="font-semibold group-hover:text-primary transition-colors">{cat.name}</h3>
                   <Badge variant="secondary" className="ml-auto">{items.length}</Badge>
-                </div>
+                </button>
                 <div className="space-y-2">
-                  {items.map(article => (
+                  {items.map((article: any) => (
                     <Link key={article.id} to={`/ajuda/${article.slug}`} className="block">
                       <Card className="hover:border-primary/40 hover:shadow-sm transition-all">
                         <CardContent className="p-3 sm:p-4 flex items-start gap-3">
@@ -110,7 +173,9 @@ export default function HelpCenter() {
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm">{article.title}</div>
                             {article.summary && (
-                              <div className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{article.summary}</div>
+                              <div className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                                {article.summary}
+                              </div>
                             )}
                           </div>
                           {article.related_release_id && (
@@ -127,11 +192,22 @@ export default function HelpCenter() {
             );
           })}
 
+          {/* Estado vazio */}
           {articles.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
-              {search ? 'Nenhum artigo encontrado para sua busca.' : 'Ainda não há artigos publicados.'}
+              {search
+                ? 'Nenhum artigo encontrado para sua busca.'
+                : 'Ainda não há artigos publicados.'}
             </div>
           )}
+
+          {/* Sem artigos na categoria selecionada */}
+          {selectedCategoryId &&
+            (grouped.get(selectedCategoryId)?.length ?? 0) === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                Nenhum artigo publicado nesta categoria ainda.
+              </div>
+            )}
         </div>
       </div>
     </div>
