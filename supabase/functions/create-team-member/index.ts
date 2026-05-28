@@ -119,8 +119,14 @@ Deno.serve(async (req) => {
       resolvedConnectionId = firstInstance?.id || null;
     }
 
-    // Update profile (handle_new_user trigger inserted basic record)
-    await admin.from('profiles').update({
+    // Upsert profile — NÃO confiar em UPDATE casar a linha do trigger handle_new_user.
+    // O GoTrue (createUser) e o PostgREST usam conexões diferentes no pooler;
+    // um UPDATE pode rodar antes do profile do trigger ficar visível, deixando
+    // organization_id = NULL e fazendo o usuário "sumir" da listagem (filtrada por org).
+    // Upsert por id garante que o profile sempre exista COM organization_id.
+    const profilePayload = {
+      id: newUserId,
+      email: body.email,
       full_name: body.full_name,
       organization_id: orgId,
       recovery_whatsapp: body.recovery_whatsapp || null,
@@ -131,11 +137,36 @@ Deno.serve(async (req) => {
       default_menu_state: body.default_menu_state || 'open',
       default_connection_id: resolvedConnectionId,
       avatar_url: body.avatar_url || null,
-    }).eq('id', newUserId);
+    };
+
+    let { error: profileErr } = await admin
+      .from('profiles')
+      .upsert(profilePayload, { onConflict: 'id' });
+
+    // Retry uma vez em caso de corrida com o trigger (ex.: FK ainda não visível)
+    if (profileErr) {
+      console.warn('profile upsert failed once, retrying:', profileErr.message);
+      await new Promise((r) => setTimeout(r, 300));
+      const retry = await admin.from('profiles').upsert(profilePayload, { onConflict: 'id' });
+      profileErr = retry.error;
+    }
+
+    if (profileErr) {
+      // Profile não persistiu → reverter o auth user para não deixar órfão
+      console.error('profile upsert failed, rolling back auth user:', profileErr.message);
+      await admin.auth.admin.deleteUser(newUserId).catch(() => {});
+      return new Response(
+        JSON.stringify({ error: `Falha ao salvar perfil: ${profileErr.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Set role (replace default seller if needed)
     await admin.from('user_roles').delete().eq('user_id', newUserId);
-    await admin.from('user_roles').insert({ user_id: newUserId, role: body.role });
+    const { error: roleErr } = await admin
+      .from('user_roles')
+      .insert({ user_id: newUserId, role: body.role });
+    if (roleErr) console.warn('role insert failed:', roleErr.message);
 
     // Initialize permissions + notification settings
     await admin.rpc('initialize_user_permissions', {
