@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -123,6 +123,9 @@ export function usePlatformBranding() {
     refetchOnWindowFocus: true,
   });
 
+  // Rastreia a URL anterior do favicon para disparar cache-bust só quando muda
+  const prevFaviconUrl = useRef<string | null>(null);
+
   useEffect(() => {
     if (!settings) return;
     const root = document.documentElement;
@@ -174,14 +177,45 @@ export function usePlatformBranding() {
 
     // ===== FAVICON =====
     if (settings.favicon_url) {
-      let faviconLink = document.querySelector("link[rel='icon']") as HTMLLinkElement;
-      if (!faviconLink) {
-        faviconLink = document.createElement('link');
-        faviconLink.rel = 'icon';
-        document.head.appendChild(faviconLink);
-      }
-      faviconLink.href = settings.favicon_url;
+      // Cache-bust: adiciona ?_v=<timestamp> apenas quando a URL muda.
+      // Isso força o browser a descartar o favicon em cache mesmo que o
+      // arquivo no Storage seja substituído mantendo o mesmo caminho/URL.
+      const faviconChanged = prevFaviconUrl.current !== settings.favicon_url;
+      if (faviconChanged) prevFaviconUrl.current = settings.favicon_url;
 
+      const cacheBust = faviconChanged ? `?_v=${Date.now()}` : '';
+      const faviconHref = `${settings.favicon_url}${cacheBust}`;
+
+      // Detecta o tipo MIME pela extensão para aceitar PNG, ICO, SVG, WEBP
+      const rawExt = settings.favicon_url.split('?')[0].split('.').pop()?.toLowerCase() ?? '';
+      const mimeType =
+        rawExt === 'svg'  ? 'image/svg+xml'  :
+        rawExt === 'ico'  ? 'image/x-icon'   :
+        rawExt === 'webp' ? 'image/webp'      :
+        rawExt === 'jpg' || rawExt === 'jpeg' ? 'image/jpeg' :
+        'image/png';
+
+      /** Helper: garante que um <link> existe e está atualizado */
+      const setLink = (selector: string, props: Record<string, string>) => {
+        let el = document.querySelector(selector) as HTMLLinkElement | null;
+        if (!el) {
+          el = document.createElement('link');
+          Object.entries(props).forEach(([k, v]) => {
+            if (k !== 'href') el!.setAttribute(k, v);
+          });
+          document.head.appendChild(el);
+        }
+        el.setAttribute('type', mimeType);
+        el.href = faviconHref;
+      };
+
+      // rel="icon" — usado pelo Chrome/Edge/Safari
+      setLink("link[rel='icon']", { rel: 'icon' });
+
+      // rel="shortcut icon" — declarado no index.html, necessário para Firefox
+      setLink("link[rel='shortcut icon']", { rel: 'shortcut icon' });
+
+      // Apple Touch Icons
       let appleIcon = document.querySelector(
         "link[rel='apple-touch-icon']:not([sizes])"
       ) as HTMLLinkElement;
@@ -190,7 +224,7 @@ export function usePlatformBranding() {
         appleIcon.rel = 'apple-touch-icon';
         document.head.appendChild(appleIcon);
       }
-      appleIcon.href = settings.favicon_url;
+      appleIcon.href = faviconHref;
 
       const appleSizes = ['180x180', '152x152', '144x144', '120x120', '76x76', '60x60'];
       appleSizes.forEach((size) => {
@@ -203,7 +237,7 @@ export function usePlatformBranding() {
           icon.setAttribute('sizes', size);
           document.head.appendChild(icon);
         }
-        icon.href = settings.favicon_url;
+        icon.href = faviconHref;
       });
 
       let manifestLink = document.querySelector("link[rel='manifest']") as HTMLLinkElement;
@@ -218,9 +252,9 @@ export function usePlatformBranding() {
           background_color: '#0a0d14',
           theme_color: settings.primary_color || '#84CC16',
           icons: [192, 384, 512].map((s) => ({
-            src: settings.favicon_url!,
+            src: faviconHref,
             sizes: `${s}x${s}`,
-            type: 'image/png',
+            type: mimeType,
             purpose: 'maskable any',
           })),
           lang: settings.default_language || 'pt-BR',
