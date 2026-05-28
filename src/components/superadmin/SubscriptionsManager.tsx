@@ -28,6 +28,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAllSubscriptions, useUpdateSubscription, useSuperAdminStats } from '@/hooks/useSuperAdmin';
+import { useAllPlans } from '@/hooks/usePlatformPlans';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -40,6 +41,7 @@ export function SubscriptionsManager() {
 
   const { data: subscriptions, isLoading } = useAllSubscriptions();
   const { data: stats } = useSuperAdminStats();
+  const { data: plans } = useAllPlans();
   const updateSubscription = useUpdateSubscription();
 
   const formatCurrency = (value: number) => {
@@ -47,6 +49,13 @@ export function SubscriptionsManager() {
       style: 'currency',
       currency: 'BRL',
     }).format(value);
+  };
+
+  /** Retorna o preço mensal formatado do plano pelo slug, ou null se não encontrado */
+  const getPlanPrice = (slug: string): string | null => {
+    const plan = plans?.find(p => p.slug === slug);
+    if (!plan || plan.price_monthly == null) return null;
+    return formatCurrency(plan.price_monthly);
   };
 
   const filteredSubs = subscriptions?.filter((sub: any) => {
@@ -141,6 +150,9 @@ export function SubscriptionsManager() {
               <span className="font-medium">Trial</span>
             </div>
             <p className="text-2xl font-bold mt-2">{stats?.planCounts?.trial || 0}</p>
+            {getPlanPrice('trial') && (
+              <p className="text-xs text-muted-foreground">{getPlanPrice('trial')}/mês</p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -150,7 +162,11 @@ export function SubscriptionsManager() {
               <span className="font-medium">Starter</span>
             </div>
             <p className="text-2xl font-bold mt-2">{stats?.planCounts?.starter || 0}</p>
-            <p className="text-xs text-muted-foreground">R$ 97/mês</p>
+            {getPlanPrice('starter') ? (
+              <p className="text-xs text-muted-foreground">{getPlanPrice('starter')}/mês</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">—</p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -160,7 +176,11 @@ export function SubscriptionsManager() {
               <span className="font-medium">Pro</span>
             </div>
             <p className="text-2xl font-bold mt-2">{stats?.planCounts?.pro || 0}</p>
-            <p className="text-xs text-muted-foreground">R$ 497/mês</p>
+            {getPlanPrice('pro') ? (
+              <p className="text-xs text-muted-foreground">{getPlanPrice('pro')}/mês</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">—</p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -170,7 +190,11 @@ export function SubscriptionsManager() {
               <span className="font-medium">Enterprise</span>
             </div>
             <p className="text-2xl font-bold mt-2">{stats?.planCounts?.enterprise || 0}</p>
-            <p className="text-xs text-muted-foreground">Personalizado</p>
+            {getPlanPrice('enterprise') ? (
+              <p className="text-xs text-muted-foreground">{getPlanPrice('enterprise')}/mês</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Personalizado</p>
+            )}
           </CardContent>
         </Card>
       </div>
