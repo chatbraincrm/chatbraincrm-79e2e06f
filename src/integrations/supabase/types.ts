@@ -1,3 +1,4 @@
+Initialising login role...
 export type Json =
   | string
   | number
@@ -11,6 +12,31 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -670,98 +696,6 @@ export type Database = {
           },
           {
             foreignKeyName: "agent_training_materials_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ai_audits: {
-        Row: {
-          analyzed_at: string
-          id: string
-          interaction_id: string
-          issues: string[] | null
-          quality_score: number | null
-          suggestions: string[] | null
-          tone_analysis: Json | null
-        }
-        Insert: {
-          analyzed_at?: string
-          id?: string
-          interaction_id: string
-          issues?: string[] | null
-          quality_score?: number | null
-          suggestions?: string[] | null
-          tone_analysis?: Json | null
-        }
-        Update: {
-          analyzed_at?: string
-          id?: string
-          interaction_id?: string
-          issues?: string[] | null
-          quality_score?: number | null
-          suggestions?: string[] | null
-          tone_analysis?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ai_audits_interaction_id_fkey"
-            columns: ["interaction_id"]
-            isOneToOne: false
-            referencedRelation: "interactions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ai_insights: {
-        Row: {
-          created_at: string
-          id: string
-          insight: string
-          is_dismissed: boolean | null
-          organization_id: string | null
-          priority: Database["public"]["Enums"]["task_priority"] | null
-          product_id: string | null
-          title: string
-          type: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          insight: string
-          is_dismissed?: boolean | null
-          organization_id?: string | null
-          priority?: Database["public"]["Enums"]["task_priority"] | null
-          product_id?: string | null
-          title: string
-          type: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          insight?: string
-          is_dismissed?: boolean | null
-          organization_id?: string | null
-          priority?: Database["public"]["Enums"]["task_priority"] | null
-          product_id?: string | null
-          title?: string
-          type?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ai_insights_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ai_insights_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
@@ -2072,47 +2006,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: true
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cadence_templates: {
-        Row: {
-          blocks: Json | null
-          created_at: string
-          day_number: number
-          id: string
-          product_id: string
-          title: string
-          trigger: string | null
-          updated_at: string
-        }
-        Insert: {
-          blocks?: Json | null
-          created_at?: string
-          day_number: number
-          id?: string
-          product_id: string
-          title: string
-          trigger?: string | null
-          updated_at?: string
-        }
-        Update: {
-          blocks?: Json | null
-          created_at?: string
-          day_number?: number
-          id?: string
-          product_id?: string
-          title?: string
-          trigger?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cadence_templates_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -4685,53 +4578,6 @@ export type Database = {
           },
         ]
       }
-      interactions: {
-        Row: {
-          cadence_day: number | null
-          channel: Database["public"]["Enums"]["interaction_channel"]
-          content: string
-          created_at: string
-          direction: string | null
-          id: string
-          lead_id: string
-          metadata: Json | null
-          template_used: string | null
-          user_id: string | null
-        }
-        Insert: {
-          cadence_day?: number | null
-          channel?: Database["public"]["Enums"]["interaction_channel"]
-          content: string
-          created_at?: string
-          direction?: string | null
-          id?: string
-          lead_id: string
-          metadata?: Json | null
-          template_used?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          cadence_day?: number | null
-          channel?: Database["public"]["Enums"]["interaction_channel"]
-          content?: string
-          created_at?: string
-          direction?: string | null
-          id?: string
-          lead_id?: string
-          metadata?: Json | null
-          template_used?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "interactions_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       lead_notes: {
         Row: {
           author_id: string
@@ -5358,20 +5204,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "leads_closer_id_fkey"
-            columns: ["closer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_closer_id_fkey"
-            columns: ["closer_id"]
-            isOneToOne: false
-            referencedRelation: "public_booking_profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "leads_current_stage_id_fkey"
             columns: ["current_stage_id"]
             isOneToOne: false
@@ -5390,34 +5222,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_sdr_id_fkey"
-            columns: ["sdr_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_sdr_id_fkey"
-            columns: ["sdr_id"]
-            isOneToOne: false
-            referencedRelation: "public_booking_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_sector_id_fkey"
-            columns: ["sector_id"]
-            isOneToOne: false
-            referencedRelation: "sectors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_squad_id_fkey"
-            columns: ["squad_id"]
-            isOneToOne: false
-            referencedRelation: "sales_squads"
             referencedColumns: ["id"]
           },
         ]
@@ -5550,63 +5354,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "public_booking_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      materials: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          objective: string | null
-          organization_id: string | null
-          product_id: string | null
-          status: string | null
-          tags: string[] | null
-          type: string
-          updated_at: string
-          url: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          objective?: string | null
-          organization_id?: string | null
-          product_id?: string | null
-          status?: string | null
-          tags?: string[] | null
-          type: string
-          updated_at?: string
-          url: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          objective?: string | null
-          organization_id?: string | null
-          product_id?: string | null
-          status?: string | null
-          tags?: string[] | null
-          type?: string
-          updated_at?: string
-          url?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "materials_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "materials_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -5753,71 +5500,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "notifications_admin_notification_id_fkey"
-            columns: ["admin_notification_id"]
-            isOneToOne: false
-            referencedRelation: "admin_notifications"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "notifications_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      objections: {
-        Row: {
-          category: string
-          created_at: string
-          follow_up_question: string | null
-          id: string
-          organization_id: string | null
-          product_id: string | null
-          proof_material_id: string | null
-          suggested_response: string
-          updated_at: string
-          what_they_mean: string | null
-          what_they_say: string
-        }
-        Insert: {
-          category: string
-          created_at?: string
-          follow_up_question?: string | null
-          id?: string
-          organization_id?: string | null
-          product_id?: string | null
-          proof_material_id?: string | null
-          suggested_response: string
-          updated_at?: string
-          what_they_mean?: string | null
-          what_they_say: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          follow_up_question?: string | null
-          id?: string
-          organization_id?: string | null
-          product_id?: string | null
-          proof_material_id?: string | null
-          suggested_response?: string
-          updated_at?: string
-          what_they_mean?: string | null
-          what_they_say?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "objections_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "objections_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
@@ -6148,20 +5831,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "organizations_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organizations_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "public_booking_profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "organizations_plan_id_fkey"
             columns: ["plan_id"]
@@ -8845,6 +8514,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "support_messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "public_booking_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "support_messages_ticket_id_fkey"
             columns: ["ticket_id"]
             isOneToOne: false
@@ -8903,6 +8586,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "support_tickets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_booking_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "support_tickets_organization_id_fkey"
             columns: ["organization_id"]
@@ -10233,20 +9930,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "webhooks_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "webhooks_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "public_booking_profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "webhooks_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -10258,13 +9941,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "webhooks_squad_id_fkey"
-            columns: ["squad_id"]
-            isOneToOne: false
-            referencedRelation: "sales_squads"
             referencedColumns: ["id"]
           },
         ]
@@ -10448,7 +10124,6 @@ export type Database = {
         }
         Returns: number
       }
-      claim_first_super_admin: { Args: never; Returns: boolean }
       compute_lead_temperature: {
         Args: { _lead_id: string }
         Returns: {
@@ -10535,11 +10210,11 @@ export type Database = {
         Args: { p_from?: string; p_org_id: string; p_to?: string }
         Returns: Json
       }
-      get_user_organization: { Args: { _user_id: string }; Returns: string }
+      get_user_organization: { Args: { user_id: string }; Returns: string }
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
+          check_role: Database["public"]["Enums"]["app_role"]
+          user_id: string
         }
         Returns: boolean
       }
@@ -10647,7 +10322,6 @@ export type Database = {
         Returns: undefined
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
-      is_system_initialized: { Args: never; Returns: boolean }
       is_within_business_hours: { Args: { p_org_id: string }; Returns: boolean }
       mark_super_admin_password_changed: { Args: never; Returns: boolean }
       move_to_dlq: {
@@ -10767,7 +10441,7 @@ export type Database = {
         Returns: boolean
       }
       user_belongs_to_organization: {
-        Args: { _org_id: string; _user_id: string }
+        Args: { org_id: string; user_id: string }
         Returns: boolean
       }
       user_in_sector_organization: {
@@ -10928,6 +10602,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin", "manager", "seller", "super_admin"],
